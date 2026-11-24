@@ -277,10 +277,6 @@ Every screen carries a header dot: `live · updated Ns ago` or `stale — last p
 
 ![Overview](docs/screenshots/overview.png)
 
-**Nodes** — one row per node: cores, RAM, GPUs, load ratio, real CPU %, uptime.
-
-![Nodes](docs/screenshots/nodes.png)
-
 **Jobs** — every tracked job with owner, queue, state, resources, PBS stress and host; filterable and searchable.
 
 ![Jobs](docs/screenshots/jobs.png)
@@ -292,6 +288,10 @@ Every screen carries a header dot: `live · updated Ns ago` or `stale — last p
 **Logs** — job state transitions and fired alerts straight out of MySQL.
 
 ![Logs](docs/screenshots/logs.png)
+
+**Nodes** — one row per node: cores, RAM, GPUs, load ratio, real CPU %, uptime.
+
+![Nodes](docs/screenshots/nodes.png)
 
 ## Setup
 
