@@ -32,3 +32,6 @@ restart.txt
 .idea/
 .DS_Store
 Thumbs.db
+
+# full-resolution screenshot originals, kept locally only
+.screenshots-original/
