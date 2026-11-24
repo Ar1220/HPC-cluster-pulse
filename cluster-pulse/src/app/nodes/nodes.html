@@ -1,0 +1,47 @@
+<section class="card">
+  <div class="head">
+    <strong>NODES</strong>
+    <small>{{ rows().length }} nodes · allocation from PBS · usage from the on-node sampler</small>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>NODE</th><th>STATE</th><th>CORES</th><th>RAM</th><th>GPUS</th>
+        <th>LOAD</th><th>CPU USED</th><th>UPTIME</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.node) {
+        <tr>
+          <td class="name">{{ row.node }}</td>
+          <td>
+            <span class="pill" [class.live]="row.state === 'live'">{{ row.state }}</span>
+          </td>
+          <td>
+            {{ row.coresUsed ?? '—' }} / {{ row.coresTotal ?? '—' }}
+            <span class="bar"><i [style.width.%]="pct(row.coresUsed, row.coresTotal)"></i></span>
+          </td>
+          <td>
+            {{ row.ramUsedGb }} / {{ row.ramTotalGb }} GB
+            <span class="bar"><i [style.width.%]="pct(row.ramUsedGb, row.ramTotalGb)"></i></span>
+          </td>
+          <td>{{ row.gpusAlloc ?? '—' }} / {{ row.gpusTotal ?? '—' }}</td>
+          <td [style.color]="loadColour(row)">
+            {{ row.load1 ?? '—' }}
+            @if (row.coresTotal) { <small>({{ loadRatio(row).toFixed(2) }}×)</small> }
+          </td>
+          <td>{{ row.cpuPct ?? '—' }}%</td>
+          <td class="dim">{{ row.uptime }}</td>
+        </tr>
+      } @empty {
+        <tr><td colspan="8" class="dim">No node data yet — waiting for the collector.</td></tr>
+      }
+    </tbody>
+  </table>
+
+  <p class="note">
+    Load above 1.0× core count is normal here — gpu01 has been measured at 1.6–1.9×.
+    CPU USED is the real /proc/stat utilisation, not the PBS allocation.
+  </p>
+</section>

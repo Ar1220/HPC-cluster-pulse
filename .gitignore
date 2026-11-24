@@ -1,0 +1,34 @@
+# dependencies / build output
+node_modules/
+dist/
+.angular/
+__pycache__/
+*.pyc
+
+# secrets — never commit
+.env
+server/.env
+server/.env.local
+*.pem
+*.key
+
+# logs and scratch
+*.log
+*.log.err
+ngserve.log*
+api.log*
+*.tmp
+s1.txt
+s2.txt
+start2.txt
+start3.txt
+start4.txt
+start_trace.txt
+stop.txt
+restart.txt
+
+# editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

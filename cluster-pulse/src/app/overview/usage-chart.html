@@ -1,0 +1,41 @@
+<div class="head">
+  <strong>UTILISATION</strong>
+  <small>{{ windowLabel() }}</small>
+</div>
+
+<div class="legend">
+  @for (s of series(); track s.key) {
+    <span class="item">
+      <i [style.background]="s.colour"></i>{{ s.label }} <b>{{ s.latest }}%</b>
+    </span>
+  }
+</div>
+
+@if (!series().length) {
+  <p class="empty">Collecting the first points from the live feed…</p>
+}
+
+<svg
+  [attr.viewBox]="'0 0 ' + width + ' ' + height"
+  preserveAspectRatio="none"
+  role="img"
+  aria-label="CPU, RAM and per-node GPU utilisation over time"
+>
+  <!-- horizontal grid + y labels -->
+  @for (line of gridLines; track line) {
+    <line
+      [attr.x1]="plot.x"
+      [attr.x2]="plot.x + plot.w"
+      [attr.y1]="yFor(line)"
+      [attr.y2]="yFor(line)"
+      class="grid"
+    />
+    <text [attr.x]="plot.x - 6" [attr.y]="yFor(line) + 3" class="axis" text-anchor="end">
+      {{ line }}
+    </text>
+  }
+
+  @for (s of series(); track s.key) {
+    <polyline [attr.points]="s.points" fill="none" [attr.stroke]="s.colour" class="line" />
+  }
+</svg>

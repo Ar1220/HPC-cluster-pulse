@@ -1,0 +1,27 @@
+<header>
+  <div class="brand">CLUSTER PULSE</div>
+  <nav>
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Overview</a>
+    <a routerLink="/nodes" routerLinkActive="active">Nodes</a>
+    <a routerLink="/jobs" routerLinkActive="active">Jobs</a>
+    <a routerLink="/logs" routerLinkActive="active">Logs</a>
+  </nav>
+  <span class="spacer"></span>
+  <span class="conn">
+    <span class="dot" [class.ok]="fresh()" [class.bad]="!fresh()"></span>
+    <small>
+      @if (!connected()) {
+        disconnected — retrying
+      } @else if (staleness() > 5) {
+        stale — last push {{ staleness() }}s ago
+      } @else {
+        live · updated {{ staleness() }}s ago
+      }
+    </small>
+  </span>
+  <small class="stamp">{{ ingestTs() }}</small>
+</header>
+
+<main>
+  <router-outlet />
+</main>

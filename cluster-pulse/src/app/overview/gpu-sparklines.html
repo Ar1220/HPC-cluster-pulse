@@ -1,0 +1,26 @@
+<div class="head">
+  <strong>PER-GPU UTILISATION</strong>
+  <small>last 60 s per device · node-wide, includes all users</small>
+</div>
+
+@for (row of rows(); track row.node) {
+  <div class="node-row">
+    <span class="node-label">{{ row.node }}</span>
+    <div class="tiles">
+      @for (tile of row.tiles; track tile.key) {
+        <div class="tile" [title]="tile.node + ' GPU ' + tile.index + ' · ' + tile.value + '%'">
+          <div class="tile-head">
+            <span class="idx">g{{ tile.index }}</span>
+            <span class="val" [style.color]="tile.colour">{{ tile.value }}%</span>
+          </div>
+          <svg viewBox="0 0 100 26" preserveAspectRatio="none">
+            @if (tile.points) {
+              <polyline [attr.points]="tile.points" fill="none"
+                        [attr.stroke]="tile.colour" class="spark" />
+            }
+          </svg>
+        </div>
+      }
+    </div>
+  </div>
+}

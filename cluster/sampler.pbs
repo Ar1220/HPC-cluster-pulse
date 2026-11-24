@@ -1,0 +1,41 @@
+#!/bin/bash
+# Cluster Pulse — sampler job
+# Runs one sampler per GPU node. Submit TWICE, pinning a different host each time:
+#   qsub -v NODE_HOST=gpu01 sampler.pbs
+#   qsub -v NODE_HOST=gpu02 sampler.pbs
+#
+# Notes from real probing of this cluster:
+#   * the default queue is workq — you MUST pass -q gpu
+#   * module system is broken, PBS lives in /opt/pbs/bin (already on PATH)
+#   * do NOT add "#PBS -o <path>" here: on this PBS one job silently lost its
+#     output file. Default naming (-j oe) works.
+
+#PBS -N cp_sampler
+#PBS -q gpu
+#PBS -l select=1:ncpus=1:ngpus=1:mem=2gb
+#PBS -l walltime=24:00:00
+#PBS -j oe
+
+set -u
+
+SAMPLER="${HOME}/monitor/sampler.py"
+INTERVAL="${INTERVAL:-1}"
+
+echo "=== cp_sampler on $(hostname) at $(date) ==="
+echo "PBS_JOBID=${PBS_JOBID:-unset}"
+
+if [ ! -f "$SAMPLER" ]; then
+  echo "FATAL: $SAMPLER not found" >&2
+  exit 2
+fi
+
+# POST target is optional. Leave unset to run file-only (collector backfills).
+POST="${CLUSTER_PULSE_POST:-}"
+
+cd "$HOME" || exit 3
+
+if [ -n "$POST" ]; then
+  exec python3 "$SAMPLER" --interval "$INTERVAL" --home "$HOME" --post "$POST"
+else
+  exec python3 "$SAMPLER" --interval "$INTERVAL" --home "$HOME"
+fi

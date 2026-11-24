@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cluster Pulse — live</title>
+<style>
+  :root {
+    --bg:#0b0f16; --panel:#121a26; --line:#1e2b3d; --txt:#e8eef7;
+    --dim:#7d8ea6; --blue:#3b9dff; --green:#31d07a; --amber:#f2b134; --red:#ff5d5d;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt);
+         font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  header { display:flex; align-items:center; gap:16px; padding:14px 20px;
+           border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--bg); z-index:5; }
+  h1 { font-size:15px; letter-spacing:.14em; margin:0; font-weight:600; }
+  .dot { width:9px;height:9px;border-radius:50%; display:inline-block; margin-right:6px; }
+  .ok { background:var(--green); box-shadow:0 0 10px var(--green); }
+  .bad { background:var(--red); box-shadow:0 0 10px var(--red); }
+  .warn { background:var(--amber); }
+  .spacer { flex:1; }
+  small { color:var(--dim); }
+  main { padding:18px 20px 60px; display:grid; gap:16px; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .card .label { font-size:10px; letter-spacing:.12em; color:var(--dim); }
+  .card .value { font-size:22px; margin-top:6px; }
+  .card .sub { font-size:11px; color:var(--dim); margin-top:4px; }
+  .nodes { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:900px) { .nodes { grid-template-columns:1fr; } }
+  .node-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .gpus { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .gpu { background:#0e1620; border:1px solid var(--line); border-radius:8px; padding:8px; }
+  .gpu .idx { font-size:10px; color:var(--dim); }
+  .gpu .util { font-size:18px; }
+  .gpu .meta { font-size:10px; color:var(--dim); }
+  .bar { height:4px; background:#1b2736; border-radius:2px; overflow:hidden; margin-top:6px; }
+  .bar > i { display:block; height:100%; background:var(--blue); }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+  th { color:var(--dim); font-weight:500; letter-spacing:.08em; font-size:10px; }
+  .pill { padding:1px 6px; border-radius:999px; font-size:10px; border:1px solid var(--line); }
+  .R { color:var(--green); } .Q { color:var(--amber); } .H { color:var(--dim); }
+</style>
+</head>
+<body>
+<header>
+  <h1>CLUSTER PULSE</h1>
+  <span id="conn"><span class="dot bad"></span><small>connecting…</small></span>
+  <span class="spacer"></span>
+  <small id="stamp">no data yet</small>
+</header>
+<main>
+  <section class="kpis" id="kpis"></section>
+  <section class="card">
+    <div class="node-head"><strong>COMPUTE FABRIC</strong><small id="gpunote">utilisation is node-wide and includes all users</small></div>
+    <div class="nodes" id="nodes"></div>
+  </section>
+  <section class="card">
+    <div class="node-head"><strong>JOBS</strong><small id="jobsnote"></small></div>
+    <table><thead><tr><th>ID</th><th>NAME</th><th>OWNER</th><th>QUEUE</th><th>STATE</th><th>CPUS</th><th>GPUS</th><th>HOST</th></tr></thead>
+    <tbody id="jobs"></tbody></table>
+  </section>
+  <section class="card">
+    <div class="node-head"><strong>EVENTS</strong><small>derived server-side</small></div>
+    <div id="events" style="font-size:12px;color:var(--dim)">—</div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let lastJobs = [];
+let lastTs = 0;
+
+function setConn(ok, label) {
+  $('conn').innerHTML = `<span class="dot ${ok ? 'ok' : 'bad'}"></span><small>${label}</small>`;
+}
+
+function pct(a, b) { return b ? Math.round((a / b) * 1000) / 10 : 0; }
+
+function renderKpis(s) {
+  const t = s.totals || {};
+  const q = s.queues || {};
+  const running = Object.values(q).reduce((n, x) => n + (x.running || 0), 0);
+  const queued = Object.values(q).reduce((n, x) => n + (x.queued || 0), 0);
+  const gpuFree = (t.gpus || 0) - (t.gpus_alloc || 0);
+  const cards = [
+    ['GPUS FREE', `${gpuFree} / ${t.gpus}`, `${t.gpus_alloc} allocated`],
+    ['JOBS RUNNING', running, `${(q.gpu || {}).running || 0} on gpu queue`],
+    ['JOBS QUEUED', queued, `${(q.gpu || {}).queued || 0} waiting for gpu`],
+    ['CPU CORES', `${t.cores_alloc} / ${t.cores}`, `${pct(t.cores_alloc, t.cores)}% allocated`],
+    ['RAM', `${((t.mem_alloc_kb || 0) / 1048576).toFixed(0)} / ${((t.mem_kb || 0) / 1048576).toFixed(0)} GB`,
+            `${pct(t.mem_alloc_kb, t.mem_kb)}% allocated`],
+  ];
+  $('kpis').innerHTML = cards.map(([l, v, s2]) =>
+    `<div class="card"><div class="label">${l}</div><div class="value">${v}</div><div class="sub">${s2}</div></div>`).join('');
+}
+
+function renderNodes(s) {
+  const html = (s.nodes || []).map((n) => {
+    if (!n) return `<div class="card"><div class="node-head"><strong>node offline</strong></div><small>no sampler data</small></div>`;
+    const cores = n.cpu?.logical || 0;
+    const load = n.loadavg?.[0];
+    const ratio = cores ? (load / cores) : 0;
+    const colour = ratio < 0.7 ? 'var(--green)' : ratio <= 1 ? 'var(--amber)' : 'var(--red)';
+    const gpus = (n.gpus || []).map((g) => `
+      <div class="gpu">
+        <div class="idx">GPU ${g.index}</div>
+        <div class="util">${g.util_pct ?? '—'}%</div>
+        <div class="meta">${g.mem_used_mib ? (g.mem_used_mib / 1024).toFixed(0) : '—'}/${((g.mem_total_mib || 0) / 1024).toFixed(0)} GB · ${g.temp_c ?? '—'}°C</div>
+        <div class="bar"><i style="width:${Math.min(g.util_pct || 0, 100)}%"></i></div>
+      </div>`).join('');
+    return `<div class="card">
+      <div class="node-head"><strong>${n.node}</strong>
+        <small style="color:${colour}">load ${load ?? '—'} / ${cores} cores (${ratio.toFixed(2)}×)</small></div>
+      <div class="gpus">${gpus}</div>
+      <div class="sub" style="margin-top:8px;color:var(--dim);font-size:11px">
+        RAM ${(((n.mem?.used_kb) || 0) / 1048576).toFixed(0)} / ${(((n.mem?.total_kb) || 0) / 1048576).toFixed(0)} GB ·
+        node clock ${n.node_ts || '—'}
+      </div></div>`;
+  }).join('');
+  $('nodes').innerHTML = html || '<small>waiting for node samples…</small>';
+}
+
+function renderJobs(jobs) {
+  if (Array.isArray(jobs)) lastJobs = jobs;
+  const rows = lastJobs.slice(0, 25).map((j) => `
+    <tr><td>${j.id}</td><td>${j.name ?? ''}</td><td>${j.owner ?? ''}</td>
+    <td>${j.queue ?? ''}</td><td class="${j.state}">${j.state ?? ''}</td>
+    <td>${j.ncpus ?? '—'}</td><td>${j.ngpus ?? '—'}</td><td>${j.exec_host ?? ''}</td></tr>`).join('');
+  $('jobs').innerHTML = rows || '<tr><td colspan="8">no jobs</td></tr>';
+  $('jobsnote').textContent = `${lastJobs.length} jobs · refreshes on change (≤60s)`;
+}
+
+function renderAlerts(alerts) {
+  if (!alerts || !alerts.length) return;
+  $('events').innerHTML = alerts.map((a) =>
+    `<div><span class="pill">${a.kind}</span> ${a.message}</div>`).join('');
+}
+
+function ingest(msg) {
+  if (msg.type === 'hello') {
+    setConn(true, 'connected');
+    if (msg.snapshot) { renderKpis(msg.snapshot); renderNodes(msg.snapshot); renderJobs(msg.snapshot.jobs); }
+    return;
+  }
+  if (msg.type === 'snapshot') {
+    const s = msg.snapshot;
+    lastTs = Date.now();
+    renderKpis(s); renderNodes(s); renderJobs(s.jobs); renderAlerts(msg.alerts);
+    $('stamp').textContent = `ingest ${s.ingest_ts} · pbs ${s.pbs_refreshed_s_ago}s ago`;
+  }
+}
+
+function connect() {
+  const ws = new WebSocket(`ws://${location.host}/stream`);
+  ws.onopen = () => setConn(true, 'connected');
+  ws.onmessage = (e) => ingest(JSON.parse(e.data));
+  ws.onclose = () => { setConn(false, 'disconnected — retrying'); setTimeout(connect, 1500); };
+  ws.onerror = () => ws.close();
+}
+connect();
+
+setInterval(() => {
+  if (!lastTs) return;
+  const age = Math.round((Date.now() - lastTs) / 1000);
+  if (age > 5) setConn(false, `stale — last push ${age}s ago`);
+}, 1000);
+</script>
+</body>
+</html>

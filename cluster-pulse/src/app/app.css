@@ -1,0 +1,73 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--txt);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 5;
+}
+
+.brand {
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  font-weight: 600;
+}
+
+nav {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--dim);
+}
+
+nav a.active {
+  color: var(--txt);
+  border-bottom: 1px solid var(--blue);
+  padding-bottom: 2px;
+}
+
+nav .soon {
+  opacity: 0.45;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.conn small,
+.stamp {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+  background: var(--red);
+}
+
+.dot.ok {
+  background: var(--green);
+  box-shadow: 0 0 10px var(--green);
+}
+
+.dot.bad {
+  box-shadow: 0 0 10px var(--red);
+}
+
+main {
+  padding: 18px 20px 60px;
+}

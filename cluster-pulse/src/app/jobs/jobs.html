@@ -1,0 +1,63 @@
+<section class="card">
+  <div class="head">
+    <strong>JOBS</strong>
+    <small>
+      {{ counts().all }} tracked · {{ counts().R }} running · {{ counts().Q }} queued ·
+      {{ counts().H }} held
+      · STRESS is PBS accounting (refreshes ~5 min, not 1 s)
+      @if (!connected()) { · live feed down }
+    </small>
+  </div>
+
+  <div class="filters">
+    <button [class.active]="stateFilter() === 'all'" (click)="setState('all')">All</button>
+    <button [class.active]="stateFilter() === 'R'" (click)="setState('R')">Running</button>
+    <button [class.active]="stateFilter() === 'Q'" (click)="setState('Q')">Queued</button>
+    <button [class.active]="stateFilter() === 'H'" (click)="setState('H')">Held</button>
+
+    <select (change)="setQueue($event)">
+      @for (queue of queues(); track queue) {
+        <option [value]="queue">{{ queue === 'all' ? 'all queues' : queue }}</option>
+      }
+    </select>
+
+    <input type="search" placeholder="search id / name / owner / host"
+           (input)="setSearch($event)" />
+    <span class="spacer"></span>
+    <small class="dim">sorted by live CPU</small>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>NAME</th><th>OWNER</th><th>QUEUE</th><th>STATE</th>
+        <th>CPUS</th><th>GPUS</th><th>STRESS<small> (pbs)</small></th><th>MEM</th><th>HOST</th><th>WALLTIME</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (job of filtered(); track job.id) {
+        <tr>
+          <td>{{ job.id }}</td>
+          <td>{{ job.name ?? '—' }}</td>
+          <td class="dim">{{ job.owner ?? '—' }}</td>
+          <td>{{ job.queue ?? '—' }}</td>
+          <td [class]="job.state ?? ''">{{ job.state ?? '—' }}</td>
+          <td>{{ job.ncpus ?? '—' }}</td>
+          <td>{{ job.ngpus ?? '—' }}</td>
+          <td class="stress">
+            <span class="stress-value">{{ job.cpupercent ?? '—' }}{{ job.cpupercent ? '%' : '' }}</span>
+            <span class="bar"><i [style.width.%]="stressWidth(job.cpupercent)"
+                                 [style.background]="stressColour(job.cpupercent)"></i></span>
+          </td>
+          <td>{{ gb(job.mem_used_kb) }}</td>
+          <td class="dim">{{ job.exec_host ?? '—' }}</td>
+          <td>{{ job.walltime_used ?? '—' }} / {{ job.walltime_limit ?? '—' }}</td>
+        </tr>
+      } @empty {
+        <tr><td colspan="11" class="dim">No jobs match those filters.</td></tr>
+      }
+    </tbody>
+  </table>
+</section>
+
+<app-jquery-job-table />

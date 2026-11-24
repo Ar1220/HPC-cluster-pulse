@@ -1,0 +1,134 @@
+<section class="kpis">
+  <div class="card">
+    <div class="label">GPUS ALLOCATED</div>
+    <div class="value">{{ totals()?.gpus_alloc ?? 0 }} / {{ totals()?.gpus ?? '—' }}</div>
+    <div class="sub">{{ gpusFree() }} free · avg util {{ gpuAvgUtil() }}%</div>
+  </div>
+  <div class="card">
+    <div class="label">GPU UTILISATION</div>
+    <div class="value">{{ gpuAvgUtil() }}%</div>
+    <div class="sub">all 16 H100s · node-wide, all users</div>
+  </div>
+  <div class="card">
+    <div class="label">JOBS RUNNING</div>
+    <div class="value">{{ jobsRunning() }}</div>
+    <div class="sub">{{ queuedCount() }} queued in scheduler</div>
+  </div>
+  <div class="card">
+    <div class="label">JOBS QUEUED</div>
+    <div class="value">{{ jobsQueued() }}</div>
+    <div class="sub">across {{ queueNames().join(' · ') || '—' }}</div>
+  </div>
+  <div class="card">
+    <div class="label">CPU LOAD</div>
+    <div class="value">{{ cpuUsedPct() }}%</div>
+    <div class="sub">{{ totals()?.cores_alloc ?? 0 }} / {{ totals()?.cores ?? 0 }} cores allocated</div>
+  </div>
+  <div class="card">
+    <div class="label">RAM IN USE</div>
+    <div class="value">{{ ramUsedGb() }} GB</div>
+    <div class="sub">{{ gb(totals()?.mem_alloc_kb) }} GB allocated of {{ gb(totals()?.mem_kb) }}</div>
+  </div>
+</section>
+
+<section class="card">
+  <app-usage-chart [points]="history()" />
+</section>
+
+<section class="card">
+  <app-gpu-sparklines [data]="gpuHistory()" />
+</section>
+
+@if (alerts().length) {
+  <section class="card alerts">
+    <div class="head"><strong>ACTIVE ALERTS</strong><small>derived from measured thresholds</small></div>
+    @for (alert of alerts().slice(0, 5); track alert.subject + alert.kind) {
+      <div class="alert-row">
+        <span class="pill">{{ alert.kind }}</span>
+        <span class="msg">{{ alert.message }}</span>
+      </div>
+    }
+  </section>
+}
+
+<section class="card">
+  <div class="head">
+    <strong>COMPUTE FABRIC</strong>
+    <small>GPU utilisation is node-wide and includes all users — PBS does not isolate GPUs on this cluster</small>
+  </div>
+
+  @if (!liveNodes().length) {
+    <p class="empty">Waiting for sampler data from gpu01 / gpu02…</p>
+  }
+
+  <div class="nodes">
+    @for (node of liveNodes(); track node.node) {
+      <div class="node">
+        <div class="node-head">
+          <strong>{{ node.node }}</strong>
+          <small [style.color]="loadColour(node)">
+            load {{ node.loadavg[0] ?? '—' }} / {{ node.cpu.logical }} cores
+            ({{ loadRatio(node).toFixed(2) }}×)
+          </small>
+        </div>
+
+        <div class="gpus">
+          @for (gpu of node.gpus; track gpu.index) {
+            <div class="gpu">
+              <div class="idx">GPU {{ gpu.index }}</div>
+              <div class="util">{{ gpu.util_pct ?? '—' }}%</div>
+              <div class="meta">
+                {{ ((gpu.mem_used_mib ?? 0) / 1024).toFixed(0) }}/{{ ((gpu.mem_total_mib ?? 0) / 1024).toFixed(0) }} GB
+                · {{ gpu.temp_c ?? '—' }}°C
+              </div>
+              <div class="bar"><i [style.width.%]="Math.min(gpu.util_pct ?? 0, 100)"></i></div>
+            </div>
+          }
+        </div>
+
+        <div class="node-foot">
+          RAM {{ gb(node.mem.used_kb) }} / {{ gb(node.mem.total_kb) }} GB ·
+          sampler clock {{ node.node_ts }}
+        </div>
+      </div>
+    }
+  </div>
+</section>
+
+<section class="card">
+  <div class="head">
+    <strong>RUNNING JOBS</strong>
+    <small>{{ jobs().length }} tracked · sorted by live CPU · refreshes on change (≤60 s)</small>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>NAME</th><th>OWNER</th><th>QUEUE</th><th>STATE</th>
+        <th>CPUS</th><th>GPUS</th><th>STRESS</th><th>MEM</th><th>HOST</th><th>WALLTIME</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (job of runningJobs(); track job.id) {
+        <tr>
+          <td>{{ job.id }}</td>
+          <td>{{ job.name ?? '—' }}</td>
+          <td>{{ job.owner ?? '—' }}</td>
+          <td>{{ job.queue ?? '—' }}</td>
+          <td [class]="job.state ?? ''">{{ job.state ?? '—' }}</td>
+          <td>{{ job.ncpus ?? '—' }}</td>
+          <td>{{ job.ngpus ?? '—' }}</td>
+          <td class="stress">
+            <span class="stress-value">{{ job.cpupercent ?? '—' }}{{ job.cpupercent ? '%' : '' }}</span>
+            <span class="bar"><i [style.width.%]="stressWidth(job.cpupercent)"
+                                 [style.background]="stressColour(job.cpupercent)"></i></span>
+          </td>
+          <td>{{ job.mem_used_kb ? gb(job.mem_used_kb) + ' GB' : '—' }}</td>
+          <td>{{ job.exec_host ?? '—' }}</td>
+          <td>{{ job.walltime_used ?? '—' }} / {{ job.walltime_limit ?? '—' }}</td>
+        </tr>
+      } @empty {
+        <tr><td colspan="11" class="empty">No job list received yet.</td></tr>
+      }
+    </tbody>
+  </table>
+</section>

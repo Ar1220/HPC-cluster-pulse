@@ -1,0 +1,17 @@
+{
+  "name": "cluster-pulse-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cluster Pulse ingest API + WebSocket fan-out for the UPES HPC dashboard",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node --env-file=.env src/server.js",
+    "dev": "node --env-file=.env --watch src/server.js"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "mysql2": "^3.11.0",
+    "ws": "^8.18.0"
+  }
+}

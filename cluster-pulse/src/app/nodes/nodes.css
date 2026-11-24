@@ -1,0 +1,88 @@
+:host {
+  display: block;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.head small {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+th {
+  color: var(--dim);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+}
+
+td.name {
+  font-weight: 600;
+}
+
+td.dim,
+.dim {
+  color: var(--dim);
+}
+
+.pill {
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  border: 1px solid var(--line);
+  color: var(--blue);
+}
+
+.pill.live {
+  color: var(--green);
+  border-color: var(--green);
+}
+
+.bar {
+  display: block;
+  height: 3px;
+  background: #1b2736;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+  max-width: 90px;
+}
+
+.bar > i {
+  display: block;
+  height: 100%;
+  background: var(--blue);
+}
+
+.note {
+  color: var(--dim);
+  font-size: 11px;
+  margin: 10px 0 0;
+}

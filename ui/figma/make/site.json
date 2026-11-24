@@ -1,0 +1,10 @@
+{
+  "description": "A simple interface for greeting users and starting a conversation.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

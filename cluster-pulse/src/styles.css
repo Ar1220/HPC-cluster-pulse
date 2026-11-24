@@ -1,0 +1,27 @@
+/* Cluster Pulse — global tokens.
+   Dark control-room palette from the locked design; values only change here. */
+:root {
+  --bg: #0b0f16;
+  --panel: #121a26;
+  --line: #1e2b3d;
+  --txt: #e8eef7;
+  --dim: #7d8ea6;
+  --blue: #3b9dff;
+  --green: #31d07a;
+  --amber: #f2b134;
+  --red: #ff5d5d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--txt);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}

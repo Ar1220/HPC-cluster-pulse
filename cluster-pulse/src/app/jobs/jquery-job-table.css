@@ -1,0 +1,63 @@
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 16px;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.head small {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.status {
+  font-size: 11px;
+  color: var(--dim);
+  margin-bottom: 8px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+th {
+  color: var(--dim);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+}
+
+.dim {
+  color: var(--dim);
+}
+
+.R {
+  color: var(--green);
+}
+
+.Q {
+  color: var(--amber);
+}
+
+.H {
+  color: var(--dim);
+}

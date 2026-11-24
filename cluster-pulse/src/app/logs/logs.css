@@ -1,0 +1,105 @@
+:host {
+  display: block;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.head small {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.filters button {
+  background: #0e1620;
+  color: var(--dim);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.filters button.active {
+  color: var(--txt);
+  border-color: var(--blue);
+}
+
+.filters .spacer {
+  flex: 1;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+th {
+  color: var(--dim);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+}
+
+td.ts {
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+td.detail {
+  color: var(--dim);
+}
+
+.pill {
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  border: 1px solid var(--line);
+  color: var(--blue);
+  white-space: nowrap;
+}
+
+.pill.alert {
+  color: var(--amber);
+}
+
+.empty {
+  color: var(--dim);
+  font-size: 12px;
+  padding: 10px 0;
+}
+
+.err {
+  color: var(--amber);
+}

@@ -1,0 +1,52 @@
+<section class="card">
+  <div class="head">
+    <strong>EVENT LOG</strong>
+    <small>
+      {{ rows().length }} rows from MySQL · auto-refresh 10 s
+      @if (!connected()) { · live feed down }
+    </small>
+  </div>
+
+  <div class="filters">
+    <button [class.active]="filter() === 'all'" (click)="setFilter('all')">All ({{ rows().length }})</button>
+    <button [class.active]="filter() === 'job_event'" (click)="setFilter('job_event')">
+      Job events ({{ countFor('job_event') }})
+    </button>
+    <button [class.active]="filter() === 'alert'" (click)="setFilter('alert')">
+      Alerts ({{ countFor('alert') }})
+    </button>
+    <span class="spacer"></span>
+    <button (click)="refresh()">Refresh</button>
+  </div>
+
+  @if (loading()) {
+    <p class="empty">Loading log rows…</p>
+  }
+  @if (error()) {
+    <p class="empty err">{{ error() }}</p>
+  }
+
+  @if (!loading() && !error()) {
+    <table>
+      <thead>
+        <tr><th>TIME</th><th>SOURCE</th><th>REF</th><th>MESSAGE</th><th>DETAIL</th></tr>
+      </thead>
+      <tbody>
+        @for (row of visible(); track row.ts + row.ref + row.message) {
+          <tr>
+            <td class="ts">{{ row.ts }}</td>
+            <td><span class="pill" [class.alert]="row.source === 'alert'">{{ row.source }}</span></td>
+            <td>{{ row.ref }}</td>
+            <td>{{ row.message }}</td>
+            <td class="detail">{{ row.detail ?? '—' }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="empty">
+            No rows yet. Job events appear as jobs change state; alerts appear when a
+            threshold trips (load &gt; 1.5× cores, GPU ≥ 80 °C, queue ≥ 20).
+          </td></tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>
