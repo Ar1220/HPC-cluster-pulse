@@ -104,7 +104,7 @@ That single outbound hop is why the whole thing survives VPN drops: nothing on t
 
 ```
 HPC-cluster-pulse/
-├── cluster/                  # ── HPC side (run on the cluster, not the laptop)
+├── hpc-pipeline/             # ── HPC side (files that live on the cluster, not the laptop)
 │   ├── sampler.py            #   1 Hz node sampler, runs inside a PBS job on gpu01/gpu02
 │   ├── sampler.pbs           #   PBS wrapper: -q gpu, 24 h, 1 CPU, 1 GB
 │   ├── collector.py          #   ETL on mgmt01: merge node files + PBS, POST, buffer
@@ -118,7 +118,7 @@ HPC-cluster-pulse/
 │   ├── src/schema.sql        #   6 tables + 1 view
 │   ├── src/live.html         #   dependency-free live page at :3000/live
 │   ├── api_test.mjs          #   end-to-end test suite (13 checks)
-│   └── .env                  #   port, rollup interval, MySQL credentials
+│   └── .env.example          #   copy to .env, then fill in MySQL credentials
 │
 ├── cluster-pulse/            # ── Angular dashboard (standalone components, signals)
 │   └── src/app/
@@ -265,8 +265,8 @@ Every screen carries a header dot: `live · updated Ns ago` or `stale — last p
 
 ```bash
 # copy the four files into ~/monitor
-scp cluster/sampler.py cluster/collector.py cluster/sampler.pbs cluster/pulse.sh \
-    cluster/watchdog.sh arun.26025@<login-node>:~/monitor/
+scp hpc-pipeline/sampler.py hpc-pipeline/collector.py hpc-pipeline/sampler.pbs \
+    hpc-pipeline/pulse.sh hpc-pipeline/watchdog.sh arun.26025@<login-node>:~/monitor/
 
 ssh <login-node>
 cd ~/monitor && chmod +x *.sh *.py
