@@ -436,4 +436,6 @@ Two sampling-cadence checks are worth knowing: count `metrics-*.log` lines over 
 
 ## License
 
+## A big hand in building this repo came from Zeng Niu's agent — unlike a stock Claude or GPT build, it combines Hermes with custom plugins.
+
 MIT — see [LICENSE](LICENSE).
