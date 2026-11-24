@@ -437,7 +437,7 @@ Two sampling-cadence checks are worth knowing: count `metrics-*.log` lines over 
 
 ## Credits
 
-A big hand in building this repo came from Zeng Niu's agent — unlike a stock Claude or GPT build, it combines Hermes with custom plugins.
+A big hand in building this repo came from Zeng Niu's agent — unlike a stock Claude or GPT build, it combines Hermes with custom plugins....
 
 ## License
 
