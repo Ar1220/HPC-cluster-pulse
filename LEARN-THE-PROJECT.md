@@ -229,6 +229,7 @@ A header on every screen shows a connection dot and either `live · updated Ns a
 | Whole dashboard frozen | laptop VPN address changed and the collector kept posting to the old one | `post_url.txt` re-read every 30 s + `pulse` rewrites it automatically |
 | Fake dip to zero in history | first snapshot after a collector restart had empty PBS data | skip rollups where `totals.cores === 0` |
 | `pulse start` hung, or reported a healthy UI as down | pipe inheritance from child processes; .NET `TcpClient` cannot connect to the IPv6-only `[::1]:4200` listener | detached launchers; readiness judged by `netstat` |
+| Samplers dead for ~51 h, outbox grew to 35 MB, watchdog never fired | the crontab was installed from Windows with **CRLF** line endings: every command ended in `\r`, so cron ran `bash ...watchdog.sh gpu01 >> ... 2>&1\r` and failed silently. `crontab -l` looked correct | write the crontab as a file with explicit LF bytes, install with `crontab <file>`, then verify `crontab -l | cat -A` shows no `^M` and `crontab -l | tr -cd '\r' | wc -c` returns 0 |
 
 ---
 
@@ -325,7 +326,7 @@ so instead of filling the gap.
   is ~27 KB (27783 bytes measured).
 - **`start_collector.sh`** — idempotent starter, anchored on `pgrep -f "^python3 collector.py"`
   so it cannot mistake its own command line for a running daemon.
-- **`pulse.sh`** — the control script (`status|start|stop|restart`), 49 lines, mirrors the laptop
+- **`pulse.sh`** — the control script (`status|start|stop|restart`, plus `logs` and `watch` added later), mirrors the laptop
   side: collector instances, both samplers, snapshot age, outbox bytes, and an HTTP 200 check on
   the laptop `/health` derived from `post_url.txt`.
 - **`post_url.txt` hot-reload** — the collector re-reads this file every 30 s and logs
@@ -356,7 +357,7 @@ so instead of filling the gap.
    the lag itself as certain.
 6. **A 0-byte file read lies during a channel outage.** While the SSH channel was down, both
    `read_file` and a plain read returned "File is empty (0 bytes)" for `post_url.txt` *and* for
-   `pulse.sh`, which is 1881 bytes on disk. An empty read during a flaky connection is a failed
+   `pulse.sh`, which is ~4.1 KB on disk. An empty read during a flaky connection is a failed
    read, not an empty file. I discarded it and re-read over a live channel.
 
 ## B4. Verification sweeps, with the numbers
@@ -390,7 +391,7 @@ Three full sweeps plus spot checks, all read-only, all on 20 Nov 2026.
 - Watchdog predicate test against the live scheduler: `gpu01 matches: 1`, `gpu02 matches: 1`.
 - Full-tick snapshot: `jobs_state: full`, `job_usage` 28 rows of `[id, cpu, mem_kb]`,
   e.g. `["32082", 95, 103501156]`.
-- `/health` `ingest_count` 1565 -> 1576 in 11 s, and a separate 30 s sample gave 647 -> 677
+- `/health` `ingest_count` 1565 -> 1576 in 11 s, and a separate 30 s sample gave 647 -> 677 (the counter is lower because the API was restarted between the two samples)
   exactly 30 -> the pipeline holds 1 Hz end to end.
 
 **Sweep 3 — after the VPN address change (`.163 -> .227`).**
@@ -399,7 +400,7 @@ Three full sweeps plus spot checks, all read-only, all on 20 Nov 2026.
 - `post_url.txt` -> `http://10.22.0.227:3000/api/ingest/cluster`; `outbox.jsonl` -> 0 bytes.
 - `collector.log` line 242 of 323: `post target changed: ...163... -> ...227...`, picked up with
   no restart. After it, the drain: **1409 snapshots backfilled** in total across 104
-  `backfilled N buffered snapshots` lines, from 156 buffered events. Outbox returned to 0.
+  `backfilled N buffered snapshots` lines. The 156 figure elsewhere in this record is a count of `buffered to outbox` **log lines**, not of snapshots, so it must not be read as the size of the backlog that drained. Outbox returned to 0.
 - Steady state after the drain: `ingest_count` 2294 -> 2310 in 15 s (~1.07/s), zero new log lines
   in a 15 s window, log silent for 76 s.
 
@@ -615,7 +616,7 @@ measurement I could not complete is marked as such rather than estimated.
 | # | Measurement | Result |
 |---|---|---|
 | A1 | SSH connection attempts (fresh connection each time) | **21 attempted, 5 succeeded, 16 failed (76% failure)** — 5 x `Connection reset by peer`, 3 x `Software caused connection abort` at banner exchange, 7 x `connect to host 10.16.1.50 port 22: timed out` (all seven consecutive), 1 x silent 0-byte file read |
-| A2 | POST outcomes in `collector.log` | **209 failed, 60 ok**; run lengths: 94 runs of 1, 7 runs of 2, one run of 3, one run of 4, **one run of 156** |
+| A2 | POST outcomes in `collector.log` | **209 failed, 60 ok**; runs of identical outcome: 94 singles, 7 pairs, one run of 3, one run of 4, **one run of 156**. Note what these runs are: the histogram counts runs of *both* outcomes (failed and ok), so its lengths sum to the event lines in that window, not to the 209 failures - 94 singles is not 94 failed posts |
 | A3 | Outbox while the laptop was reachable | 165979 B -> **0 B in <=34 s** (>=4.9 KB/s drain), then **0 B -> 0 B across 60 s** with `/health` returning 200 |
 | A4 | `qstat -f` (37 jobs cluster-wide) | **15.17 s, 10.37 s, 5.32 s** |
 | A4 | `pbsnodes -av` | 10.13 s first call, then **0.10 s, 0.09 s** (cold vs cached) |
@@ -883,8 +884,8 @@ net.ipv4.tcp_keepalive_probes = 9
 ```
 
 7200 + 9 x 75 = **7875 s = 2h11m15s**. Every session that ended without a clean logout ended at or
-after 2h11m (2h12, 2h13, 2h30, 4h14), and the ones still marked logged in are all under that
-footprint. That is the reap time for a connection that died silently — the tunnel goes away with
+after 2h11m (2h12, 2h13, 2h30, 4h14), and the four still marked logged in have already passed it (2h18m, 1h47m, 1h35m)
+- that is the same mechanism still in progress, not a contradiction. That is the reap time for a connection that died silently — the tunnel goes away with
 no FIN and no RST reaching mgmt01, sshd keeps the socket ESTABLISHED, and the kernel clears it
 2h11m later. Reported duration is therefore dwell-before-drop + 2h11m, which is exactly why the
 numbers look random. The short ones (8 s, 1h05, 1h35, 2h01) are clean logouts typed before the
@@ -893,7 +894,7 @@ tunnel died.
 Lingering sockets, confirmed with `ss`:
 
 ```
-29 established connections on :22
+29 established connections on :22 overall; the 10.22.x ones (14 of the 29, the rest are other users) are:
    3 x 10.22.0.98    3 x 10.22.0.130    2 x 10.22.0.226
    2 x 10.22.0.2     2 x 10.22.0.131    1 x 10.22.0.99    1 x 10.22.0.228
 SYN_RECV entries: none
