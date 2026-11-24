@@ -270,6 +270,28 @@ Every screen carries a header dot: `live · updated Ns ago` or `stale — last p
 
 ---
 
+## Screenshots
+
+**Overview** — GPUs allocated, GPU utilisation, jobs running/queued, real CPU and RAM, live alerts, the per-node GPU fabric, the utilisation chart and 16 per-GPU sparklines.
+
+![Overview](docs/screenshots/overview.png)
+
+**Nodes** — one row per node: cores, RAM, GPUs, load ratio, real CPU %, uptime.
+
+![Nodes](docs/screenshots/nodes.png)
+
+**Jobs** — every tracked job with owner, queue, state, resources, PBS stress and host; filterable and searchable.
+
+![Jobs](docs/screenshots/jobs.png)
+
+**Jobs + jQuery view** — the same data rendered twice: the Angular push view on top, and the independent `$.ajax` polling table below it that ignores the WebSocket entirely.
+
+![Jobs and jQuery view](docs/screenshots/jobs-jquery-view.png)
+
+**Logs** — job state transitions and fired alerts straight out of MySQL.
+
+![Logs](docs/screenshots/logs.png)
+
 ## Setup
 
 ### Prerequisites
