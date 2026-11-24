@@ -18,6 +18,7 @@ Built for the UPES HPC cluster (`mgmt01`, `gpu01`, `gpu02`): 2 nodes · 208 core
 - [HPC side](#hpc-side)
 - [Laptop side](#laptop-side)
 - [Database](#database)
+- [Screenshots](#screenshots)
 - [Setup](#setup)
 - [Operating it](#operating-it)
 - [Measured facts about this cluster](#measured-facts-about-this-cluster)
