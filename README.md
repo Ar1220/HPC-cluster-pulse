@@ -435,8 +435,9 @@ Two sampling-cadence checks are worth knowing: count `metrics-*.log` lines over 
 
 `LEARN-THE-PROJECT.md` is the full engineering record: the probes that shaped each decision, the measured numbers behind every claim, the bug list with root causes, and the investigations that turned out to be false alarms. If you want to know *why* something here is built the way it is, that document has the answer and the evidence.
 
-A big hand in building this repo came from Zeng Niu's agent — unlike a stock Claude or GPT build, it combines Hermes with custom plugins.
 ## Credits
+
+A big hand in building this repo came from Zeng Niu's agent — unlike a stock Claude or GPT build, it combines Hermes with custom plugins.
 
 ## License
 
