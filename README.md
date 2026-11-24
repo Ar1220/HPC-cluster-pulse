@@ -25,6 +25,7 @@ Built for the UPES HPC cluster (`mgmt01`, `gpu01`, `gpu02`): 2 nodes · 208 core
 - [Known limits and gotchas](#known-limits-and-gotchas)
 - [Verification](#verification)
 - [Further reading](#further-reading)
+- [Credits](#credits)
 
 ---
 
@@ -433,6 +434,21 @@ Two sampling-cadence checks are worth knowing: count `metrics-*.log` lines over 
 ## Further reading
 
 `LEARN-THE-PROJECT.md` is the full engineering record: the probes that shaped each decision, the measured numbers behind every claim, the bug list with root causes, and the investigations that turned out to be false alarms. If you want to know *why* something here is built the way it is, that document has the answer and the evidence.
+
+## Credits
+
+Built by **Ar1220** for the UPES HPC cluster, working with two agents from
+[Nous Research Hermes](https://hermes-agent.nousresearch.com):
+
+| Who | Did what |
+|---|---|
+| **Ar1220** | Project owner: the idea, the cluster access, every deployment decision, and the judgement calls on what was honest enough to ship |
+| **Fang Yan** (laptop side) | Pipeline design, `collector.py` and `sampler.py`, the Node/Express + WebSocket API, the MySQL schema, the Angular dashboard, the control scripts, and both documents |
+| **Cluster-side agent** | The HPC-side build and verification sweeps on `mgmt01`: PBS probing, deployment, and the accuracy review that corrected six claims in the engineering record |
+
+The two agents ran on different machines — one on the laptop, one on the login node — and the work
+was relayed between them by hand. Everything numeric in this README and in `LEARN-THE-PROJECT.md`
+was read off a machine, not estimated; where a number could not be measured, the document says so.
 
 ## License
 
