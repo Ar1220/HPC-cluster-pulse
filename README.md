@@ -164,6 +164,23 @@ Payloads are deliberately small, which means **some fields are deltas, not state
 
 The laptop API implements that contract: it inherits the previous job list when `jobs` is null, and upserts usage rows into a Map that is cleared only when `usage_full` is true. **An empty delta therefore never erases anything.**
 
+### Backfill, and why the live view cannot be hijacked
+
+Two ordering rules keep the live view honest, and both were learned the hard way:
+
+- **The outbox drains on its own thread, never inside the tick.** Draining inline meant each tick
+  waited on 4–6 buffered POSTs before writing the live snapshot, so the cadence fell to ~0.4 Hz
+  and the whole dashboard appeared to refresh every 3 seconds. Backfill now runs on a daemon
+  thread with a lock on the outbox file; the live tick does exactly one thing per second.
+- **The API rejects out-of-order snapshots.** A snapshot whose `ingest_ts` is older than the
+  current one gets `202 Accepted` and is dropped from the buffer — it never becomes live state
+  and is never broadcast. Without this, a drain could leave the dashboard showing hour-old values
+  under a "live · updated 0s ago" header, because that header measures arrival time, not the age
+  of the data.
+
+Net effect: a large backlog is backfilled in the background at its own rate, and the live
+1 Hz view is unaffected while it drains.
+
 **Consequence worth knowing:** because the merge Map lives in API memory, per-job usage reads as empty for up to 60 s after every API restart, until the first `usage_full` tick arrives. That is not a bug — just give it a minute before demoing.
 
 ---
@@ -352,6 +369,9 @@ Manual equivalent at any time: `pulse sync`.
 ## Known limits and gotchas
 
 - **Not real-time.** ~1.2 s typical, ~3 s worst case; ~1 s floor from `nvidia-smi`.
+- **The 1 Hz cadence depends on the tick staying free.** Anything added to the tick that
+  does network I/O (draining, bulk posts, retries) will show up directly as a slower
+  dashboard. Slow work belongs on a thread.
 - **Laptop is not self-starting.** After a reboot, run `pulse start` (the cluster side keeps running and buffering meanwhile).
 - **Per-job usage is empty for up to 60 s after an API restart** — the merge Map is in memory and refills on the first `usage_full` tick.
 - **`latest-snapshot.json` is a delta document**, not full state: `jobs: null` means "unchanged". Reading it directly can show zero jobs at almost any instant.

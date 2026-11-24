@@ -38,6 +38,7 @@ Usage:
 """
 
 import argparse
+import threading
 import hashlib
 import json
 import os
@@ -46,6 +47,10 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timedelta, timezone
+
+# The live tick and the backfill worker both touch the outbox file, so every
+# read/append/rewrite of it must hold this lock.
+OUTBOX_LOCK = threading.Lock()
 
 IST = timezone(timedelta(hours=5, minutes=30))
 CLOCK_SKEW_NOTE = (
@@ -373,11 +378,18 @@ def enqueue(outbox, payload, max_bytes):
             % (limit, kept),
             flush=True,
         )
-    with open(outbox, "a") as fh:
-        fh.write(json.dumps(payload) + "\n")
+    with OUTBOX_LOCK:
+        with open(outbox, "a") as fh:
+            fh.write(json.dumps(payload) + "\n")
 
 
 def drain(outbox, url, max_items=20, budget_s=2.0):
+    """Locked wrapper - see _drain."""
+    with OUTBOX_LOCK:
+        return _drain(outbox, url, max_items, budget_s)
+
+
+def _drain(outbox, url, max_items=20, budget_s=2.0):
     """Backfill a bounded slice of the outbox.
 
     Draining everything in one tick blocked the loop: after a long outage the
@@ -434,6 +446,28 @@ def main():
     outbox = os.path.join(monitor_dir, "outbox.jsonl")
     max_bytes = args.outbox_mb * 1024 * 1024
 
+    # Backfill used to run inline in the tick. Each tick then waited on 4-6
+    # POST round-trips, so the live snapshot advanced once per ~2.5 s (0.4 Hz)
+    # instead of 1 Hz for as long as a backlog existed - the dashboard looked
+    # like it refreshed every 3 s. Draining belongs on its own thread, at its
+    # own pace; the live tick must never wait for it.
+    def backfill_worker():
+        last_report = 0.0
+        while True:
+            try:
+                sent = drain(outbox, args.post)
+            except Exception as exc:
+                print("backfill error: %r" % (exc,), file=sys.stderr, flush=True)
+                sent = 0
+            now = time.time()
+            if sent and now - last_report >= 5.0:
+                print("backfilled %d buffered snapshots" % sent, flush=True)
+                last_report = now
+            # fast while it is working, gentle while the laptop is unreachable
+            time.sleep(0.25 if sent else 2.0)
+
+    if args.post and not args.once:
+        threading.Thread(target=backfill_worker, daemon=True).start()
     post_file = os.path.join(monitor_dir, "post_url.txt")
     pbs_cache = {"at": 0, "jobs": [], "nodes": []}
     last_jobs_sig = None
@@ -498,13 +532,12 @@ def main():
                 print(blob)
                 return
             if args.post:
+                # Only the live snapshot is posted from this loop. Backfill runs
+                # on its own thread, so a drain can never delay the 1 Hz tick.
                 if post(args.post, snapshot):
                     if last_post_ok is not True:
                         print("POST ok — connection established", flush=True)
                     last_post_ok = True
-                    sent = drain(outbox, args.post)
-                    if sent:
-                        print("backfilled %d buffered snapshots" % sent, flush=True)
                 else:
                     if last_post_ok is not False:
                         print("POST failed — buffering to outbox", flush=True)

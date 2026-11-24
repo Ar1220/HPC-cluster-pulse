@@ -1004,3 +1004,70 @@ FIN or RST, so sshd holds it until keepalive reaps it 2h11m later.
 Two read-only commands from an account with root would close the gaps: grepping
 `/var/log/secure` for Accepted publickey and Disconnected lines, which gives true session
 lifetimes including the ones that never got a utmp logout, and `sshd -T` for the real MaxStartups.
+
+
+---
+
+# PART G — two ordering bugs in the collector, found on 24-25 November
+
+Both were ordering mistakes, not missing features, and both were visible to the user before they
+were visible to us. Neither was caught by any test we had, because the pipeline was "working" in
+the sense that data flowed.
+
+## G1. Live snapshot posted first, backlog drained second -> the dashboard showed hour-old data
+
+The tick did this:
+
+```
+post(snapshot)          # live data
+sent = drain(outbox)    # then 4-6 OLD snapshots
+```
+
+The API keeps the **last** snapshot it receives as its current state. So every tick ended by
+handing it a snapshot two hours old, and that became "now". The symptoms were confusing:
+
+- the header read `live - updated 0s ago`, because that figure is arrival time, not data age;
+- `/api/snapshot` reported `ingest_ts 15:49` while the wall clock said `17:52`;
+- the utilisation chart drew a flat 135-minute line, because it was being fed the replayed buffer.
+
+Fix, in two layers: the collector posts the live snapshot **last**, and the API **rejects
+out-of-order snapshots** — anything whose `ingest_ts` is older than the current one gets
+`202 Accepted`, is dropped from the buffer, and never touches live state or the broadcast.
+
+## G2. Backfill draining inside the tick -> the whole UI refreshed every ~3 s
+
+After G1 was fixed by draining before posting, the drain still ran **inside** the 1 Hz tick. Each
+tick posted 4-6 buffered snapshots synchronously, each a POST round-trip of a few hundred ms, and
+only then wrote the live snapshot. `sleep(max(interval - elapsed, 0.05))` clamps at 0.05 s, so a
+tick that took 2.5 s simply ran at 0.4 Hz.
+
+Measured, independent of the laptop:
+
+| | before | after the thread |
+|---|---|---|
+| distinct `ingest_ts` in 10-12 samples 1 s apart | 4 | **12 of 12** |
+| ingest rate arriving at the API | 2 per 10 s | **10 per 10 s** |
+| user-visible effect | UI refreshed every ~3 s | 1 Hz |
+
+Fix: backfill moved to a daemon thread with `OUTBOX_LOCK` guarding every read/append/rewrite of
+`outbox.jsonl`. The live tick now does exactly one thing per second — read the node files, stamp,
+post — and never waits on the queue.
+
+## G3. What this says about the design
+
+Three separate incidents in this project came from the same root: **slow work in the tick**.
+
+- `qstat -f` + `pbsnodes` merged inline (solved by a 5 s cache)
+- draining the outbox inline (solved by bounding it, then by a thread)
+- `nvidia-smi` calls with no timeout on the sampler side (solved by daemon-thread execution)
+
+The rule that now holds: the tick may only do work with a hard upper bound, and anything that
+touches the network belongs on a thread. If a future change makes the dashboard slower, look at
+what was added to the tick first.
+
+## G4. One honest gap
+
+While the backlog was being drained and the collector was still on the old code, the outbox reached
+88% of its 50 MB bound. It never trimmed — nothing was discarded in this window — but at an earlier
+point on 24 November it *had* hit the bound once and the oldest half was dropped with a gap marker.
+The raw 1 Hz `metrics-*.log` files on the cluster still hold every sample across that gap.

@@ -53,6 +53,7 @@ const state = {
   pendingJobs: null,
   pendingAlerts: [],
   jobUsage: new Map(),
+  backfillSkipped: 0,
 };
 
 const server = http.createServer(app);
@@ -150,6 +151,19 @@ app.post('/api/ingest/cluster', async (req, res) => {
   const snapshot = req.body;
   if (!snapshot || snapshot.type !== 'cluster_snapshot') {
     return res.status(400).json({ error: 'expected a cluster_snapshot payload' });
+  }
+
+  // Out-of-order guard. The collector drains its outbox oldest-first, so a
+  // backfilled snapshot can arrive after newer data. Accepting it as current
+  // state is what made the dashboard show two-hour-old values under a
+  // "live - updated 0s ago" header, and made the chart flicker between old and
+  // new on every drain batch. Backfilled payloads are acknowledged (202) so the
+  // collector drops them from its buffer, but they never touch live state.
+  const incomingTs = Date.parse(snapshot.ingest_ts || '');
+  const currentTs = Date.parse((state.snapshot && state.snapshot.ingest_ts) || '');
+  if (!Number.isNaN(incomingTs) && !Number.isNaN(currentTs) && incomingTs < currentTs) {
+    state.backfillSkipped = (state.backfillSkipped || 0) + 1;
+    return res.status(202).json({ ok: true, backfill: true, skipped: state.backfillSkipped });
   }
 
   // Collector contract: "jobs": null means "unchanged since last tick" — the
