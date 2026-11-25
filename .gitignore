@@ -36,5 +36,5 @@ Thumbs.db
 # full-resolution screenshot originals, kept locally only
 .screenshots-original/
 
-# the 1080p master lives as a GitHub release asset, not in git
-docs/media/*.mp4
+# docs/media/*.mp4 is committed on purpose: GitHub Pages serves it with range
+# requests, which is what makes <video> stream instead of download.

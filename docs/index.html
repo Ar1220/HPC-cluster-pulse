@@ -105,6 +105,11 @@
   pre .k { color: var(--accent); }
   pre .s { color: var(--ok); }
 
+  /* ---------- video ---------- */
+  figure.video { margin: 20px 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  figure.video video { display: block; width: 100%; height: auto; background: #000; }
+  figure.video figcaption { padding: 11px 14px; font-size: 13px; color: var(--muted); }
+
   /* ---------- screenshots ---------- */
   .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin: 20px 0; }
   figure.shot { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
@@ -159,6 +164,7 @@
   <div class="brand">Cluster Pulse</div>
   <div class="sub">engineering dossier</div>
   <ol>
+    <li><a href="#watch">Watch it run</a></li>
     <li><a href="#what">What it is</a></li>
     <li><a href="#stack">Languages &amp; stack</a></li>
     <li><a href="#pipeline">The six pipelines</a></li>
@@ -192,6 +198,19 @@
     <div class="fact"><div class="n">6</div><div class="k">mysql tables</div></div>
   </div>
 </header>
+
+
+<section id="watch">
+  <h2><span class="num">00</span>Watch it run</h2>
+  <p class="note">68 seconds of the live dashboard, recorded from the running system. Controls and audio are on — browsers block sound from playing before you interact, so press play.</p>
+  <figure class="video">
+    <video controls preload="metadata" playsinline poster="screenshots/overview.png">
+      <source src="media/cluster-pulse-demo-1080p.mp4" type="video/mp4">
+      Your browser cannot play this video — <a href="media/cluster-pulse-demo-1080p.mp4">download it instead</a>.
+    </video>
+    <figcaption>Overview → GPU fabric → utilisation chart → running jobs, all updating at 1 Hz.</figcaption>
+  </figure>
+</section>
 
 <!-- 01 -->
 <section id="what">
