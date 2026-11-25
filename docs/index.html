@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cluster Pulse — Engineering Dossier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b10;
+    --panel: #0e131b;
+    --panel-2: #121923;
+    --line: #1e2836;
+    --ink: #e8eef7;
+    --muted: #8b9bb0;
+    --dim: #5b6b80;
+    --accent: #4f9dff;
+    --accent-dim: #1d4f8f;
+    --ok: #37d67a;
+    --warn: #ffb020;
+    --bad: #ff5d5d;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation: none !important; transition: none !important; }
+  }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); font-size: 16px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+
+  /* ---------- layout ---------- */
+  .shell { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 0; max-width: 1440px; margin: 0 auto; }
+  nav.toc {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    padding: 28px 20px; border-right: 1px solid var(--line); background: #070a0e;
+    font-size: 13px;
+  }
+  nav.toc .brand { font-weight: 700; letter-spacing: -0.01em; font-size: 15px; margin-bottom: 4px; }
+  nav.toc .sub { color: var(--dim); font-family: var(--mono); font-size: 11px; margin-bottom: 20px; }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; counter-reset: sec; }
+  nav.toc li { counter-increment: sec; margin: 0 0 2px; }
+  nav.toc li a { display: block; padding: 6px 9px; border-radius: 5px; color: #9fb2c9; border-left: 2px solid transparent; }
+  nav.toc li a::before { content: counter(sec, decimal-leading-zero) "  "; color: var(--dim); font-family: var(--mono); font-size: 10px; }
+  nav.toc li a:hover { background: var(--panel-2); color: var(--ink); text-decoration: none; }
+  nav.toc li a.active { color: #fff; background: rgba(79,157,255,0.10); border-left-color: var(--accent); }
+  main { padding: 0 40px 120px; min-width: 0; }
+
+  /* ---------- hero ---------- */
+  header.hero { padding: 72px 0 44px; border-bottom: 1px solid var(--line); }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: clamp(38px, 5.4vw, 70px); line-height: 1.0; letter-spacing: -0.035em; margin: 14px 0 18px; font-weight: 700; }
+  h1 .thin { color: #7d8ea6; font-weight: 400; font-size: 0.72em; line-height: 1.15; }
+  .lede { font-size: clamp(17px, 1.6vw, 21px); color: var(--muted); max-width: 62ch; margin: 0 0 30px; }
+  .lede strong { color: var(--ink); font-weight: 500; }
+
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .fact { background: var(--panel); padding: 16px 18px; }
+  .fact .n { font-family: var(--mono); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .fact .k { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+
+  /* ---------- sections ---------- */
+  section { padding: 56px 0; border-bottom: 1px solid var(--line); }
+  section:last-of-type { border-bottom: 0; }
+  h2 { font-size: clamp(24px, 2.6vw, 34px); letter-spacing: -0.025em; margin: 0 0 8px; font-weight: 700; }
+  h2 .num { font-family: var(--mono); font-size: 0.5em; color: var(--accent); vertical-align: super; margin-right: 10px; letter-spacing: 0; }
+  h3 { font-size: 17px; margin: 34px 0 10px; letter-spacing: -0.01em; }
+  h3 .mono { color: var(--accent); font-weight: 400; }
+  p { max-width: 74ch; color: #ccd8e6; }
+  .note { color: #93a5bb; font-size: 14px; max-width: 74ch; }
+
+  /* ---------- tables ---------- */
+  .tw { overflow-x: auto; margin: 18px 0; border: 1px solid var(--line); border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; padding: 11px 14px; background: var(--panel-2); color: var(--muted); font-weight: 500; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td.mono { font-family: var(--mono); font-size: 12.5px; color: #a9c4e6; white-space: nowrap; }
+  td .why { color: var(--muted); }
+  tbody tr:hover { background: #0c1118; }
+
+  /* ---------- architecture ---------- */
+  .flow { display: grid; gap: 10px; margin: 22px 0; }
+  .stage { display: grid; grid-template-columns: 132px 1fr; gap: 18px; align-items: start; background: var(--panel); border: 1px solid var(--line); border-left: 2px solid var(--accent-dim); border-radius: 6px; padding: 14px 18px; }
+  .stage .where { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.04em; }
+  .stage .where span { display: block; color: var(--dim); margin-top: 3px; }
+  .stage .what { font-size: 14.5px; }
+  .stage .what b { font-weight: 500; }
+  .stage .lat { font-family: var(--mono); font-size: 12px; color: var(--warn); }
+  .arrow { text-align: center; color: var(--accent-dim); font-family: var(--mono); font-size: 12px; margin: -4px 0; }
+
+  /* ---------- code ---------- */
+  pre { background: #05080c; border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; overflow-x: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.65; color: #b9c9dd; }
+  pre .c { color: var(--dim); }
+  pre .k { color: var(--accent); }
+  pre .s { color: var(--ok); }
+
+  /* ---------- screenshots ---------- */
+  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin: 20px 0; }
+  figure.shot { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  figure.shot img { display: block; width: 100%; height: auto; border-bottom: 1px solid var(--line); cursor: zoom-in; }
+  figure.shot figcaption { padding: 11px 14px; font-size: 13px; color: var(--muted); }
+  figure.shot figcaption b { color: var(--ink); font-weight: 500; display: block; margin-bottom: 2px; }
+  dialog#zoom { border: 0; padding: 0; background: transparent; max-width: 96vw; }
+  dialog#zoom::backdrop { background: rgba(3,5,8,0.92); }
+  dialog#zoom img { max-width: 96vw; max-height: 92vh; border-radius: 6px; }
+
+  /* ---------- lists ---------- */
+  ul.tight { margin: 12px 0; padding-left: 20px; }
+  ul.tight li { margin-bottom: 7px; color: #ccd8e6; max-width: 74ch; }
+  ul.tight li b { color: var(--ink); font-weight: 500; }
+  .flag { display: inline-block; font-family: var(--mono); font-size: 10px; padding: 1px 7px; border-radius: 3px; vertical-align: middle; }
+  .flag.ok { background: rgba(55,214,122,0.12); color: var(--ok); }
+  .flag.bad { background: rgba(255,93,93,0.12); color: var(--bad); }
+  .flag.warn { background: rgba(255,176,32,0.12); color: var(--warn); }
+
+  /* ---------- qa ---------- */
+  details.qa { border: 1px solid var(--line); border-radius: 7px; background: var(--panel); margin: 8px 0; }
+  details.qa summary { padding: 13px 16px; cursor: pointer; font-weight: 500; list-style: none; }
+  details.qa summary::-webkit-details-marker { display: none; }
+  details.qa summary::before { content: "Q"; font-family: var(--mono); color: var(--accent); margin-right: 10px; font-size: 12px; }
+  details.qa[open] summary { border-bottom: 1px solid var(--line); }
+  details.qa .a { padding: 14px 16px 16px; color: #c3cfdd; font-size: 14.5px; }
+  details.qa .a p { margin: 0 0 10px; }
+  details.qa .a p:last-child { margin-bottom: 0; }
+
+  footer { padding: 40px 0 0; color: var(--dim); font-size: 13px; }
+  footer .mono { color: var(--muted); }
+
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; }
+    nav.toc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+    nav.toc ol { columns: 2; }
+    main { padding: 0 20px 80px; }
+    .stage { grid-template-columns: 1fr; gap: 6px; }
+  }
+  @media print {
+    nav.toc { display: none; }
+    .shell { grid-template-columns: 1fr; }
+    body { background: #fff; color: #111; }
+    section { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="toc">
+  <div class="brand">Cluster Pulse</div>
+  <div class="sub">engineering dossier</div>
+  <ol>
+    <li><a href="#what">What it is</a></li>
+    <li><a href="#stack">Languages &amp; stack</a></li>
+    <li><a href="#pipeline">The six pipelines</a></li>
+    <li><a href="#files">Every file, and why</a></li>
+    <li><a href="#numbers">Measured numbers</a></li>
+    <li><a href="#shots">The dashboard</a></li>
+    <li><a href="#bugs">Bugs we actually hit</a></li>
+    <li><a href="#limits">Honest limits</a></li>
+    <li><a href="#viva">Viva questions</a></li>
+    <li><a href="#credits">Credits</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<header class="hero">
+  <div class="eyebrow">UPES HPC · PBS Pro · built Nov 2026</div>
+  <h1>Cluster Pulse<br><span class="thin">a live picture of<br>a supercomputer</span></h1>
+  <p class="lede">
+    A monitoring pipeline for the university HPC cluster: <strong>1 Hz sampling on the GPU nodes</strong>,
+    a collector on the login node, a Node/Express API, MySQL for history, and an Angular dashboard.
+    This page is the engineering record — what each file does, how the data moves, the numbers we
+    measured, and the bugs that taught us the most.
+  </p>
+  <div class="facts">
+    <div class="fact"><div class="n">2</div><div class="k">nodes</div></div>
+    <div class="fact"><div class="n">208</div><div class="k">cpu cores</div></div>
+    <div class="fact"><div class="n">16</div><div class="k">H100 GPUs</div></div>
+    <div class="fact"><div class="n">1 Hz</div><div class="k">sampling</div></div>
+    <div class="fact"><div class="n">~1.2 s</div><div class="k">end to end</div></div>
+    <div class="fact"><div class="n">6</div><div class="k">mysql tables</div></div>
+  </div>
+</header>
+
+<!-- 01 -->
+<section id="what">
+  <h2><span class="num">01</span>What it is, and what it is not</h2>
+  <p>
+    The cluster's own tools answer one question at a time — <code>qstat</code>, <code>pbsnodes</code>,
+    <code>nvidia-smi</code>. There is no single live picture: how loaded each node is, what every GPU
+    is doing right now, who is burning CPU, and what changed in the last hour. Cluster Pulse collects
+    that every second, stores it, and renders it.
+  </p>
+  <p class="note">
+    It is not "real-time". Measured latency is ~1.2 s typical and ~3 s worst case, and ~1 s is a
+    physical floor because <code>nvidia-smi</code> itself averages GPU utilisation over a ~1 s window.
+    Sampling faster would repeat numbers, not produce fresher ones.
+  </p>
+
+  <h3>Two constraints shaped everything</h3>
+  <ul class="tight">
+    <li><b>No agent on the login node, exposed.</b> <code>mgmt01</code> has no inbound reachability, and long-running work there breaks cluster policy. So nothing is installed beyond Python files and a crontab.</li>
+    <li><b>The link is unreliable.</b> SSH handshakes drop roughly 1 in 3, and the VPN hands the laptop a new address on almost every reconnect. The design assumes the tunnel will die mid-flight.</li>
+  </ul>
+</section>
+
+<!-- 02 -->
+<section id="stack">
+  <h2><span class="num">02</span>Languages and stack, and what each one is doing</h2>
+  <p class="note">Nine technologies. Each is here because a specific job demanded it, not because it was fashionable — the "why" column is the part a viva examiner will push on.</p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Technology</th><th>Used in</th><th>What it does here — and why it</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>Python 3</b><br><span class="mono">stdlib only</span></td>
+          <td class="mono">sampler.py<br>collector.py</td>
+          <td class="why">Sampling and ETL. Chosen because the compute nodes cannot install packages reliably and every dependency is a failure mode on a shared filesystem — <code>/proc</code>, <code>nvidia-smi</code>, <code>subprocess</code> and <code>json</code> are enough.</td>
+        </tr>
+        <tr>
+          <td><b>Bash</b></td>
+          <td class="mono">sampler.pbs<br>watchdog.sh<br>pulse.sh<br>start_collector.sh</td>
+          <td class="why">Anything the scheduler or cron runs. PBS jobs <em>are</em> shell scripts, and cron's environment differs from an interactive one — keeping this layer in Bash means no interpreter path surprises.</td>
+        </tr>
+        <tr>
+          <td><b>Node.js + Express</b></td>
+          <td class="mono">server/src/server.js</td>
+          <td class="why">The ingest endpoint and REST API. Non-blocking I/O suits a server that receives one POST per second and fans it out to several WebSocket clients without queueing.</td>
+        </tr>
+        <tr>
+          <td><b>WebSocket</b><br><span class="mono">ws</span></td>
+          <td class="mono">/stream</td>
+          <td class="why">Push instead of poll. The browser holds one socket and re-renders on message; there is no timer, so the UI cannot show stale numbers without also saying it is stale.</td>
+        </tr>
+        <tr>
+          <td><b>MySQL 8.4</b></td>
+          <td class="mono">schema.sql<br>db.js</td>
+          <td class="why">History and the SQL half of the subject. 1 Hz data is <b>rolled up to 10 s</b> on write: 8,640 rows a day instead of 86,400, and the live screen never waits on the database.</td>
+        </tr>
+        <tr>
+          <td><b>TypeScript + Angular</b></td>
+          <td class="mono">cluster-pulse/</td>
+          <td class="why">The dashboard. Standalone components, signals and OnPush — the WebSocket message lands, the signal changes, the view updates. TypeScript matters here because the wire format (snapshot, deltas, nulls) is subtle enough to get wrong silently.</td>
+        </tr>
+        <tr>
+          <td><b>jQuery</b></td>
+          <td class="mono">jquery-job-table.*</td>
+          <td class="why">Deliberately the <em>other</em> approach: an independent <code>$.ajax</code> poll every 5 s that builds its table in the DOM and ignores the WebSocket. It exists because the syllabus asks for it, and it is a useful control — if the two views disagree, something is wrong.</td>
+        </tr>
+        <tr>
+          <td><b>PowerShell 5.1</b></td>
+          <td class="mono">pulse.ps1<br>pulse.cmd</td>
+          <td class="why">Laptop-side control: status dots, start/stop/restart, log tail, and the VPN address sync over SSH. Native to Windows, so no runtime to install.</td>
+        </tr>
+        <tr>
+          <td><b>HTML / CSS</b></td>
+          <td class="mono">src/live.html<br>styles.css</td>
+          <td class="why">A dependency-free fallback page at <code>:3000/live</code> plus the design tokens for the app. When the Angular dev server is down, the data is still readable.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 03 -->
+<section id="pipeline">
+  <h2><span class="num">03</span>The six pipelines, in the order data travels</h2>
+  <p class="note">"Pipeline" here means a stage with its own cadence and its own failure mode. Each one is a file you can point at in the viva.</p>
+
+  <div class="flow">
+    <div class="stage">
+      <div class="where">gpu01 / gpu02<span>inside a PBS job</span></div>
+      <div class="what">
+        <b>1 · Sampling — <span class="mono">sampler.py</span></b><br>
+        Reads <code>/proc/stat</code> (real CPU busy %), <code>/proc/meminfo</code> (real RAM), and two
+        <code>nvidia-smi</code> queries (8 GPUs: utilisation, memory, temperature, power; plus which
+        processes hold GPU memory and whose). Writes <code>latest-&lt;node&gt;.json</code> atomically —
+        temp file then rename, so a reader never sees half a file.
+        <div class="lat">every 1.0 s · ~3 KB</div>
+      </div>
+    </div>
+    <div class="arrow">▼ &nbsp; shared Lustre — no transfer, no credentials</div>
+    <div class="stage">
+      <div class="where">mgmt01<span>login node</span></div>
+      <div class="what">
+        <b>2 · Collection / ETL — <span class="mono">collector.py</span></b><br>
+        Merges both node files with scheduler state: <code>qstat -f</code> and <code>pbsnodes -av</code>
+        cached for 5 s (they are the expensive calls). Slims the payload — the job list is only re-sent
+        when it changes, per-job usage travels as deltas, <code>apps[]</code> every 15 s.
+        <div class="lat">every 1.0 s · ~3.5 KB snapshot</div>
+      </div>
+    </div>
+    <div class="arrow">▼ &nbsp; HTTP POST to the laptop — the only outbound hop</div>
+    <div class="stage">
+      <div class="where">mgmt01<span>buffer</span></div>
+      <div class="what">
+        <b>3 · Transport and buffering — <span class="mono">outbox.jsonl</span></b><br>
+        If the POST fails, the snapshot is appended to a bounded buffer (50 MB) and drained later by a
+        dedicated thread — never inside the 1 Hz tick. Past the bound the oldest half is dropped with a
+        <code>{"type":"gap"}</code> marker, so a long outage degrades visibly instead of silently.
+        <div class="lat">drain on its own thread · 20 items / 2 s budget</div>
+      </div>
+    </div>
+    <div class="arrow">▼ &nbsp; POST /api/ingest/cluster</div>
+    <div class="stage">
+      <div class="where">laptop :3000<span>Node + Express</span></div>
+      <div class="what">
+        <b>4 · Ingest and fan-out — <span class="mono">server.js</span></b><br>
+        Validates the payload, inherits the previous job list when <code>jobs: null</code>, merges
+        per-job usage deltas into a Map, derives alerts (GPU ≥ 80 °C, load &gt; 1.5× cores, queue ≥ 20),
+        then broadcasts to every WebSocket client. Out-of-order snapshots are rejected with
+        <code>202</code> so a backfill can never become "current".
+        <div class="lat">per message · WS push 50–150 ms</div>
+      </div>
+    </div>
+    <div class="arrow">▼ &nbsp; every 10 s, not every message</div>
+    <div class="stage">
+      <div class="where">docker :3306<span>MySQL 8.4</span></div>
+      <div class="what">
+        <b>5 · Persistence — <span class="mono">db.js</span> + <span class="mono">schema.sql</span></b><br>
+        Rollups into <code>node_metric</code>, <code>gpu_metric</code>, <code>cluster_metric</code>;
+        jobs upserted on change; state transitions into <code>job_event</code>; thresholds into
+        <code>alert</code>. Schema is created on boot and migrated with idempotent <code>ALTER</code>s.
+        <div class="lat">every 10.0 s</div>
+      </div>
+    </div>
+    <div class="arrow">▼ &nbsp; push (WS) and pull (HTTP)</div>
+    <div class="stage">
+      <div class="where">browser :4200<span>Angular</span></div>
+      <div class="what">
+        <b>6 · Presentation — <span class="mono">cluster-pulse/</span></b><br>
+        Overview, Nodes, Jobs, Logs; a four-line utilisation chart, 16 per-GPU sparklines, and a
+        header dot that says <code>live · updated Ns ago</code> or <code>stale</code>. Plus the jQuery
+        polling table and the dependency-free <code>/live</code> page.
+        <div class="lat">on push · 1 Hz</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 -->
+<section id="files">
+  <h2><span class="num">04</span>Every file, and what it is for</h2>
+  <p class="note">Grouped by where it runs. The cluster side is three Python files, five shell scripts and a crontab — nothing installed, nothing listening.</p>
+
+  <h3>A · <span class="mono">hpc-pipeline/</span> — runs on the cluster</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>File</th><th>Runs on</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">sampler.py</td><td>gpu01, gpu02</td><td class="why">The 1 Hz node sampler. Per second: 8 GPUs, GPU processes and owners, load average, real CPU % from a <code>/proc/stat</code> delta, RAM from <code>/proc/meminfo</code>. Atomic write, daily append-only log, prunes logs older than 7 days. Commands run on daemon threads so a wedged <code>nvidia-smi</code> cannot freeze the loop.</td></tr>
+        <tr><td class="mono">sampler.pbs</td><td>submitted</td><td class="why">The PBS wrapper: <code>-q gpu</code>, 24 h walltime, 1 CPU, 1 GB, and deliberately <b>no</b> <code>#PBS -o</code> — that directive silently lost its output file on this cluster once.</td></tr>
+        <tr><td class="mono">collector.py</td><td>mgmt01</td><td class="why">The ETL stage: merge, slim, POST, buffer. Re-reads <code>post_url.txt</code> every 5 s so a changed VPN address needs no restart. Backfill runs on its own thread.</td></tr>
+        <tr><td class="mono">watchdog.sh</td><td>mgmt01</td><td class="why">Judges sampler health by <b>data progress</b>, not by job state: if <code>latest-&lt;node&gt;.json</code> stops being rewritten for 180 s, kill the job and queue a fresh one.</td></tr>
+        <tr><td class="mono">pulse.sh</td><td>mgmt01</td><td class="why">Control panel: <code>status</code> (six green/red checks), <code>start</code>, <code>stop</code>, <code>restart</code>, <code>logs</code>, <code>watch</code>, plus a numbered menu.</td></tr>
+        <tr><td class="mono">start_collector.sh</td><td>mgmt01</td><td class="why">Idempotent starter — no-ops when a collector is already running, so cron can call it blindly.</td></tr>
+        <tr><td class="mono">post_url.txt</td><td>mgmt01</td><td class="why">The laptop endpoint. The single piece of configuration that changes when the VPN reconnects.</td></tr>
+        <tr><td class="mono">latest-&lt;node&gt;.json</td><td>mgmt01</td><td class="why">Newest sample per node — the source of truth for the collector.</td></tr>
+        <tr><td class="mono">latest-snapshot.json</td><td>mgmt01</td><td class="why">Newest merged snapshot, for local inspection. <b>It is a delta document</b> — <code>jobs: null</code> means "unchanged", not "empty".</td></tr>
+        <tr><td class="mono">metrics-&lt;node&gt;-YYYYMMDD.log</td><td>mgmt01</td><td class="why">1 Hz append-only history (~24 MB/day/node). The only record of any window the API missed.</td></tr>
+        <tr><td class="mono">outbox.jsonl</td><td>mgmt01</td><td class="why">Bounded buffer while the laptop is unreachable.</td></tr>
+        <tr><td class="mono">collector.log</td><td>mgmt01</td><td class="why">Timestamped collector output — POST failures, backfills, target changes.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>B · <span class="mono">server/</span> — the laptop API</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">src/server.js</td><td class="why">Express + WebSocket. <code>POST /api/ingest/cluster</code>, <code>GET /api/snapshot</code>, <code>/api/history[/nodes|/gpus]</code>, <code>/api/jobs</code>, <code>/api/logs</code>, <code>/health</code>, <code>/live</code>, <code>WS /stream</code>. Holds the latest snapshot in memory, merges deltas, derives alerts, writes rollups every 10 s.</td></tr>
+        <tr><td class="mono">src/db.js</td><td class="why">MySQL pool, schema bootstrap, idempotent <code>ALTER</code>s, rollup writes and history queries. Fails soft: without MySQL the API still serves live data.</td></tr>
+        <tr><td class="mono">src/schema.sql</td><td class="why">Six tables and one view — <code>node_metric</code>, <code>gpu_metric</code>, <code>cluster_metric</code>, <code>job</code>, <code>job_event</code>, <code>alert</code>, <code>v_recent_cluster</code>.</td></tr>
+        <tr><td class="mono">src/live.html</td><td class="why">Dependency-free live page at <code>:3000/live</code> — what you open when the Angular dev server will not compile.</td></tr>
+        <tr><td class="mono">api_test.mjs</td><td class="why">End-to-end test suite: ingest, WS push, alert thresholds, malformed payloads, 503 behaviour without MySQL.</td></tr>
+        <tr><td class="mono">.env.example</td><td class="why">The shape of the config, with no secrets — real values live in <code>.env</code>, which is git-ignored.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>C · <span class="mono">cluster-pulse/</span> — the Angular dashboard</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">core/models.ts</td><td class="why">Interfaces for the wire format — <code>NodeSample</code>, <code>GpuSample</code>, <code>Job</code>, <code>ClusterSnapshot</code>. TypeScript is the guard against the delta contract being misread.</td></tr>
+        <tr><td class="mono">core/cluster-pulse.service.ts</td><td class="why">Single source of live state: opens the WebSocket, reconnects with backoff, seeds history from MySQL on load, exposes computed signals (CPU used, RAM used, GPU average, job counts), tracks staleness.</td></tr>
+        <tr><td class="mono">overview/*</td><td class="why">The main screen: KPI cards, alerts, per-node GPU fabric, the utilisation chart, 16 sparklines, running jobs sorted by CPU.</td></tr>
+        <tr><td class="mono">overview/usage-chart.*</td><td class="why">SVG multi-line chart — cluster CPU, RAM and average GPU per node over a rolling window.</td></tr>
+        <tr><td class="mono">overview/gpu-sparklines.*</td><td class="why">16 tiles, one per GPU, 60 s of history each, coloured by threshold.</td></tr>
+        <tr><td class="mono">nodes/*</td><td class="why">Per-node table: cores, RAM, GPUs, load ratio colouring, real CPU %, uptime.</td></tr>
+        <tr><td class="mono">jobs/*</td><td class="why">Full job table with state/queue filters, search, and live stress bars.</td></tr>
+        <tr><td class="mono">jobs/jquery-job-table.*</td><td class="why">The jQuery half of the syllabus — independent <code>$.ajax</code> poll every 5 s, DOM-built, WebSocket ignored on purpose.</td></tr>
+        <tr><td class="mono">logs/*</td><td class="why">Event log from MySQL (<code>job_event</code> + <code>alert</code>) with source filters and a 10 s refresh.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>D · Laptop operations — project root</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">pulse.ps1 / pulse.cmd</td><td class="why">Status (green/red dots for MySQL, API, feed, UI), start, stop, restart, logs, open, watch, sync. Also self-heals the VPN address: compares the laptop's current <code>10.22.x</code> IP with <code>post_url.txt</code> on mgmt01 over SSH and rewrites it when it moved.</td></tr>
+        <tr><td class="mono">register-ip-sync.ps1</td><td class="why">Registers <code>ClusterPulse-IPSync</code>, a <b>hidden</b> scheduled task that runs the sync every minute, so a reconnect needs no manual step.</td></tr>
+        <tr><td class="mono">sql.cmd</td><td class="why">MySQL console wrapper — reads the password from <code>server/.env</code> at runtime so it is never in the repo.</td></tr>
+        <tr><td class="mono">queries.sql</td><td class="why">Seven ready-made demo queries for the MySQL part of the viva.</td></tr>
+        <tr><td class="mono">README.md</td><td class="why">The front door: architecture, setup, limits.</td></tr>
+        <tr><td class="mono">LEARN-THE-PROJECT.md</td><td class="why">The full engineering record — probes, measurements, bugs, and the investigations that turned out to be false alarms.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 05 -->
+<section id="numbers">
+  <h2><span class="num">05</span>Numbers, and where each one comes from</h2>
+  <p class="note">Every figure below was read off a machine. Where something could not be measured, it says so instead of being estimated.</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Quantity</th><th>Value</th><th>How it was established</th></tr></thead>
+      <tbody>
+        <tr><td>Nodes / cores / RAM</td><td class="mono">2 / 208 / ~2.11 TB</td><td class="why"><code>pbsnodes -av</code> and the collector's own <code>totals</code>.</td></tr>
+        <tr><td>GPUs</td><td class="mono">16 × H100 80GB HBM3</td><td class="why"><code>nvidia-smi</code> inside a real job — node metadata gives counts, not models. 81,559 MiB usable per card.</td></tr>
+        <tr><td>Sampling cadence</td><td class="mono">1.0 Hz per node</td><td class="why">Metric log grew +30 lines in 30 s, twice, on both nodes.</td></tr>
+        <tr><td>Scheduler refresh</td><td class="mono">5 s</td><td class="why">Config, and verified as sufficient — <code>qstat -f</code> costs ~285 ms on this cluster.</td></tr>
+        <tr><td>Database writes</td><td class="mono">every 10 s</td><td class="why">8,640 rows/day instead of 86,400; the live screen never reads the DB.</td></tr>
+        <tr><td>End-to-end latency</td><td class="mono">~1.2 s typ · ~3 s worst</td><td class="why">Sum of stage costs; the floor is <code>nvidia-smi</code>'s ~1 s averaging window.</td></tr>
+        <tr><td>Snapshot size</td><td class="mono">~3.5 KB</td><td class="why">Measured after slimming — the v1 payload was ~12 KB and filled the 50 MB buffer in 90 minutes.</td></tr>
+        <tr><td>Payload reduction</td><td class="mono">~90%</td><td class="why">Job list only on change (+60 s forced refresh), usage as deltas, rounded floats.</td></tr>
+        <tr><td>Clock skew, GPU nodes</td><td class="mono">~11 min behind</td><td class="why">Compare <code>node_ts</code> with <code>date</code> on mgmt01. Charts use <code>ingest_ts</code> for this reason.</td></tr>
+        <tr><td>SSH reliability</td><td class="mono">≈1 in 3 drops</td><td class="why">Measured over repeated attempts; resets arrive before the SSH banner, so it is the path, not sshd.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 06 -->
+<section id="shots">
+  <h2><span class="num">06</span>The dashboard</h2>
+  <p class="note">Five screens, from the running system. Click any image to enlarge.</p>
+  <div class="shots">
+    <figure class="shot">
+      <img src="screenshots/overview.png" alt="Overview screen">
+      <figcaption><b>Overview</b>GPUs allocated, utilisation, jobs running/queued, real CPU and RAM, alerts, GPU fabric, chart, sparklines.</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="screenshots/nodes.png" alt="Nodes screen">
+      <figcaption><b>Nodes</b>Cores, RAM, GPUs, load ratio, real CPU %, uptime — per node.</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="screenshots/jobs.png" alt="Jobs screen">
+      <figcaption><b>Jobs</b>Every tracked job: owner, queue, state, resources, PBS stress, host. Filters and search.</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="screenshots/jobs-jquery-view.png" alt="Jobs with jQuery view">
+      <figcaption><b>Jobs + jQuery view</b>The same data twice: Angular on push, jQuery on a 5 s poll.</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="screenshots/logs.png" alt="Logs screen">
+      <figcaption><b>Logs</b>Job state transitions and fired alerts, straight from MySQL.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 07 -->
+<section id="bugs">
+  <h2><span class="num">07</span>Bugs we actually hit</h2>
+  <p class="note">This is the section worth defending. Each of these shipped broken, produced a wrong answer, and was found by measuring rather than by reading code.</p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Symptom</th><th>Root cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Totals all zero, queues empty, while GPU data parsed fine</td>
+          <td class="why">The collector's PATH lacked <code>/opt/pbs/bin</code> — cron's environment is not the interactive shell's. <code>qstat</code> simply was not found.</td>
+          <td class="why">Resolve PBS binaries by absolute path, with the bare name as fallback.</td>
+        </tr>
+        <tr>
+          <td>Job table always empty</td>
+          <td class="why">Three causes stacked: jobs were sent only on change (so an API restart had nothing to inherit); a job payload arriving on a non-rollup tick was discarded; and <code>qstat</code> was missing from PATH.</td>
+          <td class="why">Force a full job refresh every 60 s; hold <code>pendingJobs</code> until the next rollup; absolute PBS path.</td>
+        </tr>
+        <tr>
+          <td>A duplicate sampler every 10 minutes</td>
+          <td class="why">The watchdog grep never matched — <code>qstat</code> truncates job names to 10 characters, and <code>qstat -f -u user</code> <i>ignores</i> <code>-f</code>.</td>
+          <td class="why">Unique job names per node, and plain <code>qstat -f</code> matched on <code>Job_Name</code>.</td>
+        </tr>
+        <tr>
+          <td>Collector "freezes" for ~30 s, alive but silent</td>
+          <td class="why">After an outage, <code>drain()</code> POSTed the entire 800-snapshot backlog in one tick. Later, draining inside the tick also throttled the live cadence to 0.4 Hz.</td>
+          <td class="why">Bound the drain (20 items / 2 s), then move it to a dedicated thread with a file lock.</td>
+        </tr>
+        <tr>
+          <td>Dashboard showed two-hour-old values under <code>live · updated 0s ago</code></td>
+          <td class="why">The tick posted the live snapshot <i>then</i> drained old ones, so the last thing the API received each tick was ancient. The header measured arrival time, not data age.</td>
+          <td class="why">Post live last, and have the API reject any snapshot older than the current one (<code>202</code>).</td>
+        </tr>
+        <tr>
+          <td>Watchdogs never fired for three days; samplers died and stayed dead</td>
+          <td class="why">The crontab had been installed from Windows with CRLF line endings. Cron parsed the schedule, ran the command with a trailing <code>\r</code>, and it failed silently. <code>crontab -l</code> looked perfect.</td>
+          <td class="why">Install from an LF-only file and verify with <code>crontab -l | cat -A</code> — no <code>^M</code>.</td>
+        </tr>
+        <tr>
+          <td>"Samplers have wedged" — both jobs <code>R</code>, files looked 11 minutes stale</td>
+          <td class="why">Not a bug: the GPU nodes' clocks run ~11 minutes behind mgmt01, so file mtimes always look stale from the login node. The log was growing at exactly 1 Hz the whole time.</td>
+          <td class="why">Judge freshness by <i>progress</i> (does the mtime change?), never by age against another clock.</td>
+        </tr>
+        <tr>
+          <td>A whole conclusion was wrong: "qstat is the bottleneck"</td>
+          <td class="why">Three timings of 15.17 / 10.37 / 5.32 s — descending, i.e. cache warming, taken while another PBS call ran cold. Re-measured: 0.093 s then 0.284–0.287 s steady.</td>
+          <td class="why">The conclusion was withdrawn in the document rather than quietly edited, and the correction sits directly below the original claim.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 08 -->
+<section id="limits">
+  <h2><span class="num">08</span>Honest limits</h2>
+  <ul class="tight">
+    <li><b>Not real-time.</b> ~1.2 s typical, ~3 s worst case, ~1 s floor from <code>nvidia-smi</code>.</li>
+    <li><b>GPU numbers are node-wide.</b> <code>CUDA_VISIBLE_DEVICES</code> is empty inside jobs — PBS does not isolate GPUs on this cluster, so a 1-GPU job sees all 8. There is <b>no job → GPU mapping</b>, and the UI says so rather than inventing one.</li>
+    <li><b>Job stress is PBS accounting</b>, which refreshes every few minutes, not every second.</li>
+    <li><b>Per-job usage reads as empty for up to 60 s after an API restart</b> — the merge map lives in memory and refills on the first full tick.</li>
+    <li><b><code>latest-snapshot.json</code> is a delta document.</b> <code>jobs: null</code> means unchanged; reading that file directly can show zero jobs at any instant.</li>
+    <li><b>MySQL has no retention policy yet</b> — tables grow forever (~17k node rows/day).</li>
+    <li><b>The laptop does not self-start.</b> After a reboot, run <code>pulse start</code>; the cluster keeps sampling and buffering meanwhile.</li>
+    <li><b>The VPN is not ours to fix.</b> The Sophos gateway resets the session and hands out a new address; the pipeline survives it, it does not prevent it.</li>
+    <li><b>Two subjects are not built</b>: the MongoDB half and the ESP32/IoT node.</li>
+  </ul>
+</section>
+
+<!-- 09 -->
+<section id="viva">
+  <h2><span class="num">09</span>Viva questions, answered</h2>
+  <p class="note">The questions an examiner is most likely to ask, with the answer that is actually true rather than the one that sounds best.</p>
+
+  <details class="qa"><summary>Why not just poll the cluster from the browser?</summary>
+    <div class="a"><p>Two reasons. The login node has no inbound reachability, so a browser cannot reach it; and <code>qstat -f</code> plus <code>pbsnodes</code> are expensive enough that polling them per viewer does not scale. The collector reads the scheduler once per 5 s and fans the result out.</p></div>
+  </details>
+
+  <details class="qa"><summary>Why do the compute nodes not POST directly to the laptop?</summary>
+    <div class="a"><p>They cannot. They sit on <code>10.17.1.0/24</code> with no route to the laptop's <code>10.22.x</code> VPN address — measured, <code>curl</code> exits 7. Only mgmt01 can reach the laptop (HTTP 200). So the nodes write files to shared Lustre and the login node does all the network talking.</p></div>
+  </details>
+
+  <details class="qa"><summary>Why store 1 Hz data at 10 s granularity?</summary>
+    <div class="a"><p>Because the live screen does not need the database at all — it renders from the WebSocket. The DB exists for history, and 10 s rollups keep a day at 8,640 rows instead of 86,400. The raw 1 Hz logs stay on the cluster, so nothing is truly lost.</p></div>
+  </details>
+
+  <details class="qa"><summary>What happens if the laptop is switched off for a day?</summary>
+    <div class="a"><p>The collector keeps sampling and buffers to <code>outbox.jsonl</code>. The buffer is bounded at 50 MB; past that the oldest half is dropped with a gap marker, so a long outage degrades visibly instead of silently. When the laptop returns, the backlog drains on a background thread and the live cadence is unaffected.</p></div>
+  </details>
+
+  <details class="qa"><summary>Why is there both an Angular table and a jQuery table?</summary>
+    <div class="a"><p>The syllabus asks for both, and honestly they serve different purposes. Angular is the real dashboard: WebSocket push, signals, typed models. The jQuery table polls <code>/api/jobs</code> every 5 s and rebuilds the DOM. If the two ever disagree, one of the two paths is broken — it has already been a useful control.</p></div>
+  </details>
+
+  <details class="qa"><summary>How do you know the numbers are real and not mocked?</summary>
+    <div class="a"><p>Three independent checks. Cross-node: a stress job on gpu01 moves gpu01's GPU tiles and leaves gpu02 flat. Against the scheduler: totals match <code>pbsnodes</code>, job counts match <code>qstat</code>. Against time: the snapshot's <code>ingest_ts</code> tracks the wall clock, and the metric logs grow at exactly 30 lines per 30 s.</p></div>
+  </details>
+
+  <details class="qa"><summary>What is the actual latency, and why not lower?</summary>
+    <div class="a"><p>~1.2 s typical, ~3 s worst. The chain is sampler 1.0 s + Lustre visibility &lt;1 s + collector tick ≤1.0 s + WebSocket 50–150 ms + paint ~1 s. The floor is about 1 s because <code>nvidia-smi</code> averages utilisation over a ~1 s window — sampling faster would return the same reading, not a newer one.</p></div>
+  </details>
+
+  <details class="qa"><summary>You do not have per-job GPU data. Why not?</summary>
+    <div class="a"><p>PBS does not isolate GPUs on this cluster. <code>CUDA_VISIBLE_DEVICES</code> is empty inside a job, so a job that requests one GPU can still see all eight. Any per-job GPU number would be a guess, so the dashboard states that GPU figures are node-wide and refuses to attribute them.</p></div>
+  </details>
+
+  <details class="qa"><summary>What was the hardest bug?</summary>
+    <div class="a"><p>The crontab with CRLF endings. Every watchdog was silently failing for three days while <code>crontab -l</code> looked correct, and the symptom — samplers dead, buffer growing — looked like a network problem. The second-hardest was the ordering bug where the collector posted live data and then drained old data, making the dashboard show two-hour-old numbers under a header that said "live".</p></div>
+  </details>
+
+  <details class="qa"><summary>What would you change if you started again?</summary>
+    <div class="a"><p>Two things. First, put any slow work on a thread from day one — three separate incidents came from doing network I/O inside the 1 Hz tick. Second, keep the payload a complete document instead of deltas: the bandwidth saving was real, but the delta contract cost us two confusing bugs and a great deal of explanation.</p></div>
+  </details>
+</section>
+
+<!-- 10 -->
+<section id="credits">
+  <h2><span class="num">10</span>Credits</h2>
+  <p>
+    Built by <b>Ar1220</b> on the UPES HPC cluster, working with two Hermes agents — one on the laptop,
+    one on the login node — with work relayed between them by hand.
+  </p>
+  <ul class="tight">
+    <li><b>Ar1220</b> — project owner: the idea, the cluster access, every deployment decision, and the calls on what was honest enough to ship.</li>
+    <li><b>Fang Yan</b> (laptop side) — pipeline design, <code>sampler.py</code> and <code>collector.py</code>, the Node/WebSocket API, the MySQL schema, the Angular dashboard, the control scripts, and both documents.</li>
+    <li><b>Zeng Niu's agent</b> (cluster side) — the HPC-side build and verification sweeps on mgmt01: PBS probing, deployment, and the accuracy review that corrected six claims in the engineering record.</li>
+  </ul>
+  <footer>
+    Source: <a href="https://github.com/Ar1220/HPC-cluster-pulse">github.com/Ar1220/HPC-cluster-pulse</a>
+    · full record in <span class="mono">LEARN-THE-PROJECT.md</span>
+    · licence MIT
+  </footer>
+</section>
+
+</main>
+</div>
+
+<dialog id="zoom"><img src="screenshots/overview.png" alt="Enlarged screenshot"></dialog>
+<script>
+  const dlg = document.getElementById('zoom');
+  const dlgImg = dlg.querySelector('img');
+  document.querySelectorAll('figure.shot img').forEach(img => {
+    img.addEventListener('click', () => {
+      dlgImg.src = img.src;
+      dlgImg.alt = img.alt;
+      dlg.showModal();
+    });
+  });
+  dlg.addEventListener('click', () => dlg.close());
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') dlg.close(); });
+
+  // keep the side nav in sync with what is on screen
+  const links = Array.from(document.querySelectorAll('nav.toc a'));
+  const targets = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const spy = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + en.target.id));
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  targets.forEach(s => spy.observe(s));
+  if (links[0]) links[0].classList.add('active');
+</script>
+</body>
+</html>
