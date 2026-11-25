@@ -277,11 +277,11 @@ Every screen carries a header dot: `live · updated Ns ago` or `stale — last p
 
 ## Watch it running
 
-A screen recording of the live dashboard — metrics updating, nodes, jobs, the jQuery view and logs.
+Ten seconds of the live dashboard — metrics ticking, GPU tiles, utilisation chart, running jobs.
 
-[![Play the walkthrough](docs/screenshots/overview.png)](https://github.com/Ar1220/HPC-cluster-pulse/releases/download/v1.0-demo/cluster-pulse-demo.mp4)
+![Cluster Pulse dashboard, live](docs/media/cluster-pulse-demo.gif)
 
-*Click the still to play the video (GitHub hosts it as a release asset, so the repo stays lean).*
+Full walkthrough, 68 s at 1080p: **[play the video](https://github.com/Ar1220/HPC-cluster-pulse/releases/download/v1.0-demo/cluster-pulse-demo.mp4)** (5.3 MB).
 
 ## Screenshots
 

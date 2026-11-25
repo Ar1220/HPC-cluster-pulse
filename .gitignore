@@ -35,3 +35,6 @@ Thumbs.db
 
 # full-resolution screenshot originals, kept locally only
 .screenshots-original/
+
+# the 1080p master lives as a GitHub release asset, not in git
+docs/media/*.mp4
