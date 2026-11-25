@@ -281,7 +281,7 @@ Ten seconds of the live dashboard — metrics ticking, GPU tiles, utilisation ch
 
 ![Cluster Pulse dashboard, live](docs/media/cluster-pulse-demo.gif)
 
-Full walkthrough, 68 s at 1080p: **[play the video](https://github.com/Ar1220/HPC-cluster-pulse/releases/download/v1.0-demo/cluster-pulse-demo.mp4)** (5.3 MB).
+Full walkthrough, 68 s at 1080p with **controls and audio**: **[watch the player](https://ar1220.github.io/HPC-cluster-pulse/#watch)** — GitHub's README cannot embed video with sound, so the player lives on the project site.
 
 ## Screenshots
 
