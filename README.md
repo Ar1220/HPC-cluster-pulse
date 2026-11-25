@@ -4,6 +4,8 @@ Live monitoring for a **PBS Pro** HPC cluster — 1 Hz sampling on the GPU nodes
 
 Built for the UPES HPC cluster (`mgmt01`, `gpu01`, `gpu02`): 2 nodes · 208 cores · ~2 TB RAM · 16 × NVIDIA H100 80GB HBM3.
 
+**📄 Engineering dossier: [ar1220.github.io/HPC-cluster-pulse](https://ar1220.github.io/HPC-cluster-pulse/)** — the viva-ready write-up: every file and why it exists, the six pipelines, measured numbers, the bugs we hit, and ten likely questions with answers.
+
 **It is not "real-time".** Measured end-to-end latency is **~1.2 s typical, ~3 s worst case**, and ~1 s is a physical floor because `nvidia-smi` averages GPU utilisation over a ~1-second window. Sampling faster would repeat numbers, not produce newer ones.
 
 ---
