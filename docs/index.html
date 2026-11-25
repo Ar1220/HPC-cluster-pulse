@@ -647,6 +647,14 @@
   dlg.addEventListener('click', () => dlg.close());
   document.addEventListener('keydown', e => { if (e.key === 'Escape') dlg.close(); });
 
+  // ask the video to start; if the browser refuses, it waits for the first click
+  const vid = document.querySelector('figure.video video');
+  if (vid) {
+    const tryPlay = () => vid.play().catch(() => {});
+    tryPlay();
+    document.addEventListener('pointerdown', tryPlay, { once: true });
+  }
+
   // keep the side nav in sync with what is on screen
   const links = Array.from(document.querySelectorAll('nav.toc a'));
   const targets = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
