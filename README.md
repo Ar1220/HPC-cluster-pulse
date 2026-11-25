@@ -20,6 +20,7 @@ Built for the UPES HPC cluster (`mgmt01`, `gpu01`, `gpu02`): 2 nodes · 208 core
 - [HPC side](#hpc-side)
 - [Laptop side](#laptop-side)
 - [Database](#database)
+- [Watch it running](#watch-it-running)
 - [Screenshots](#screenshots)
 - [Setup](#setup)
 - [Operating it](#operating-it)
@@ -273,6 +274,14 @@ Every screen carries a header dot: `live · updated Ns ago` or `stale — last p
 1 Hz telemetry is **never** stored raw: 10 s rollups turn a day into 8,640 rows instead of 86,400, and the live screen does not need the database at all.
 
 ---
+
+## Watch it running
+
+A screen recording of the live dashboard — metrics updating, nodes, jobs, the jQuery view and logs.
+
+[![Play the walkthrough](docs/screenshots/overview.png)](https://github.com/Ar1220/HPC-cluster-pulse/releases/download/v1.0-demo/cluster-pulse-demo.mp4)
+
+*Click the still to play the video (GitHub hosts it as a release asset, so the repo stays lean).*
 
 ## Screenshots
 
